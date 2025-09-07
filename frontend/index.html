@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 BidAnalysis Tool - 投标文件合规性检查系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="icon" href="../static/icon/Unicom1.png" type="image/png">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --success-color: #4cc9f0;
+            --danger-color: #f72585;
+            --analyze-color: #7209b7;
+            --light-bg: #f8f9fa;
+            --card-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            --card-hover-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+        }
+        
+        body {
+            background: white;
+            min-height: 100vh;
+            padding: 1rem 0.5rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* 添加半透明背景图片 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background-image: url('../static/icon/Unicom1.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.08;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        /* 简化的动态背景效果 */
+        
+        .container {
+            max-width: 600px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeInDown 1s ease-out;
+        }
+        
+        .header h1 {
+            color: white;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #fff, #e3f2fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            margin-bottom: 2.5rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--card-hover-shadow);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem 2rem;
+            border-bottom: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .card:hover .card-header::before {
+            left: 100%;
+        }
+        
+        .card-header h3 {
+            margin: 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.3rem;
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.98);
+        }
+        
+        .upload-area {
+            border: 3px dashed #dee2e6;
+            border-radius: 16px;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            transition: all 0.4s ease;
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, 
+                rgba(67, 97, 238, 0.05) 0%, 
+                rgba(63, 55, 201, 0.05) 50%, 
+                rgba(67, 97, 238, 0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .upload-area.drag-over {
+            background: rgba(67, 97, 238, 0.08);
+            border-color: var(--primary-color);
+            transform: scale(1.02);
+        }
+        
+        .upload-area.drag-over::before {
+            opacity: 1;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .upload-area h4 {
+            color: #343a40;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            font-size: 1.4rem;
+        }
+        
+        .upload-text {
+            color: #6c757d;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+        
+        /* 文件输入框样式优化 */
+        .upload-content .file-input {
+            position: absolute;
+            width: auto;
+            height: auto;
+            top: auto;
+            left: auto;
+            opacity: 0;
+            cursor: pointer;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 45px;
+        }
+
+        .btn-upload {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 0.8rem 2.2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.4s ease;
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.3);
+            font-size: 1.1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-upload::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-upload:hover::before {
+            left: 100%;
+        }
+        
+        .btn-upload:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(67, 97, 238, 0.4);
+        }
+
+        .btn-analyze {
+            background: linear-gradient(135deg, var(--analyze-color), #5a189a);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            transition: all 0.4s ease;
+            box-shadow: 0 6px 20px rgba(114, 9, 183, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-analyze::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-analyze:hover::before {
+            left: 100%;
+        }
+        
+        .btn-analyze:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(114, 9, 183, 0.5);
+        }
+        
+        .btn-analyze:disabled {
+            background: linear-gradient(135deg, #cccccc, #999999);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 25px;
+            gap: 15px;
+        }
+        
+        .file-info {
+            display: none;
+            padding: 2rem;
+            border-radius: 16px;
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            margin-top: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--primary-color);
+            animation: fadeIn 0.6s ease;
+            border: 1px solid rgba(67, 97, 238, 0.1);
+        }
+        
+        .analysis-results {
+            display: none;
+            padding: 2rem;
+            border-radius: 16px;
+            background: linear-gradient(145deg, var(--light-bg), #ffffff);
+            margin-top: 2rem;
+            border-left: 5px solid var(--analyze-color);
+            animation: fadeIn 0.8s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .file-icon {
+            font-size: 2.5rem;
+            margin-right: 20px;
+        }
+        
+        .file-details {
+            flex-grow: 1;
+        }
+        
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: #343a40;
+            font-size: 1.1rem;
+        }
+        
+        .file-meta {
+            color: #6c757d;
+            font-size: 1rem;
+        }
+
+        .analysis-item {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid #e9ecef;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .analysis-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 1.5rem;
+        }
+        
+        .analysis-title {
+            font-weight: 600;
+            color: var(--analyze-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.2rem;
+        }
+        
+        .progress-container {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border: 1px solid rgba(67, 97, 238, 0.1);
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .progress {
+            height: 12px !important;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, var(--success-color), #38b000) !important;
+            transition: width 0.6s ease;
+        }
+        
+        .btn-action {
+            margin-left: 12px;
+            min-width: 120px;
+            border-radius: 25px;
+            font-weight: 500;
+            padding: 0.6rem 1.2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-preview {
+            background: linear-gradient(135deg, var(--success-color), #38b000);
+            border: none;
+            color: white;
+        }
+        
+        .btn-preview:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(76, 201, 240, 0.4);
+        }
+        
+        .btn-download {
+            background: linear-gradient(135deg, #38b000, #2d8f00);
+            border: none;
+            color: white;
+        }
+        
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(56, 176, 0, 0.4);
+        }
+        
+        /* 帮助按钮样式 */
+        .help-button-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+        
+        .btn-help {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-help:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+            color: white;
+        }
+        
+        /* 浮窗样式 */
+        .help-modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .help-modal-content {
+            background: white;
+            margin: 5% auto;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.4s ease;
+        }
+        
+        .help-modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px 30px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .help-modal-header h4 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.3rem;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        
+        .close-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .help-modal-body {
+            padding: 30px;
+        }
+        
+        .step {
+            display: flex;
+            margin-bottom: 1.8rem;
+            align-items: flex-start;
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(67, 97, 238, 0.02);
+            transition: all 0.3s ease;
+        }
+        
+        .step:hover {
+            background: rgba(67, 97, 238, 0.05);
+            transform: translateX(5px);
+        }
+        
+        .step-number {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-right: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+        }
+        
+        .step-content h5 {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #343a40;
+            font-size: 1.1rem;
+        }
+        
+        .step-content p {
+            color: #6c757d;
+            margin-bottom: 0;
+            line-height: 1.6;
+        }
+        
+        .badge-pdf {
+            background: linear-gradient(135deg, #ef476f, #dc2626);
+            color: white;
+            font-weight: 500;
+            border-radius: 20px;
+            padding: 8px 16px;
+        }
+        
+        .badge-word {
+            background: linear-gradient(135deg, #2a6f97, #1e40af);
+            color: white;
+            font-weight: 500;
+            border-radius: 20px;
+            padding: 8px 16px;
+        }
+        
+        .supported-formats {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideDown {
+            from { 
+                opacity: 0; 
+                transform: translateY(-50px) scale(0.95); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+        
+        /* 帮助提示样式 */
+        .help-tips {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .help-tips h6 {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .help-tips ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .help-tips li {
+            margin-bottom: 8px;
+            color: #6c757d;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        @media (max-width: 576px) {
+            .card-body {
+                padding: 2rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .header p {
+                font-size: 1rem;
+            }
+            
+            .upload-area {
+                padding: 2rem 1.5rem;
+            }
+            
+            .button-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .btn-analyze {
+                width: 100%;
+                margin: 5px 0;
+            }
+            
+            .file-actions {
+                flex-direction: column;
+                margin-top: 15px;
+                width: 100%;
+            }
+            
+            .file-info .d-flex {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .file-actions .btn {
+                width: 100%;
+                margin-left: 0 !important;
+                margin-top: 10px;
+            }
+            
+            /* 移动端浮窗调整 */
+            .help-button-container {
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            .btn-help {
+                padding: 10px 16px;
+                font-size: 0.8rem;
+            }
+            
+            .help-modal-content {
+                margin: 10% auto;
+                width: 95%;
+                max-height: 85vh;
+            }
+            
+            .help-modal-header {
+                padding: 15px 20px;
+            }
+            
+            .help-modal-body {
+                padding: 20px;
+            }
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 列表组样式优化 */
+        .list-group-item {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 8px !important;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .list-group-item:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateX(3px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 徽章样式优化 */
+        .badge {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        .bg-danger { background: linear-gradient(135deg, #f72585, #e74c3c) !important; }
+        .bg-warning { background: linear-gradient(135deg, #ffc107, #f39c12) !important; }
+        .bg-info { background: linear-gradient(135deg, #4cc9f0, #3498db) !important; }
+        .bg-success { background: linear-gradient(135deg, #38b000, #27ae60) !important; }
+        .bg-secondary { background: linear-gradient(135deg, #6c757d, #495057) !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="bi bi-shield-check"></i> 智能投标合规检查系统</h1>
+            <p>基于AI大模型的投标文件智能分析平台 | 支持Word文档（.doc, .docx）和PDF文件（.pdf）</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="bi bi-cpu"></i> AI智能文档分析中心</h3>
+            </div>
+            <div class="card-body">
+                <div class="upload-area" id="dropZone">
+                    <input type="file" id="file-input" class="file-input" accept=".doc,.docx,.pdf">
+                    <div class="upload-content">
+                        <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                        <h4>拖放文件到这里</h4>
+                        <p class="upload-text">或点击"选择文件"</p>
+
+                        <!-- 按钮容器 -->
+                        <div class="button-container">
+                            <button class="btn btn-upload" id="selectFileBtn">
+                                <i class="bi bi-folder2-open"></i> 选择文件
+                            </button>
+                            
+                            <!-- 新增招标文件分析按钮 -->
+                            <button class="btn btn-analyze" id="analyzeBtn" disabled>
+                                <i class="bi bi-graph-up"></i> 招标文件分析
+                            </button>
+
+                            <!-- 新增投标文件分析按钮 -->
+                            <button class="btn btn-analyze" id="analyzeBtn1" disabled>
+                                <i class="bi bi-graph-up"></i> 投标文件分析
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+                
+                <div class="supported-formats">
+                    <span class="badge badge-pdf p-2"><i class="bi bi-filetype-pdf"></i> PDF (.pdf)</span>
+                    <span class="badge badge-word p-2"><i class="bi bi-filetype-docx"></i> Word (.doc, .docx)</span>
+                </div>
+                
+                <div id="fileInfo" class="file-info">
+                    <div class="d-flex align-items-center">
+                        <i id="fileIcon" class="file-icon"></i>
+                        <div class="file-details">
+                            <div class="file-name" id="fileName"></div>
+                            <div class="file-meta">
+                                <span id="fileType"></span> • 
+                                <span id="fileSize"></span> • 
+                                <span id="fileStatus" class="text-success">已验证</span>
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button id="actionBtn" class="btn btn-primary btn-action">
+                                <i class="bi bi-eye"></i> 预览
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 分析进度条 -->
+                <div id="progressContainer" class="progress-container" style="display: none;">
+                    <div class="progress-label">
+                        <span>分析进度</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div id="progressBar" class="progress-bar bg-success" 
+                            role="progressbar" style="width: 0%" 
+                            aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <!-- 分析结果区域 -->
+                <div id="analysisResults" class="analysis-results">
+                    <h3><i class="bi bi-bar-chart-line"></i> 分析结果</h3>
+                
+                    <div class="analysis-item">
+                        <div class="analysis-title">
+                            <i class="bi bi-card-text"></i> 文档内容分析
+                        </div>
+                        <div id="contentAnalysis">正在分析文档内容...</div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        
+                </div>
+        </div>
+        
+        <!-- 帮助按钮 -->
+        <div class="help-button-container">
+            <button class="btn btn-help" id="helpBtn" title="使用指南">
+                <i class="bi bi-question-circle"></i> 使用指南
+            </button>
+        </div>
+        
+        <!-- 帮助浮窗 -->
+        <div class="help-modal" id="helpModal">
+            <div class="help-modal-content">
+                <div class="help-modal-header">
+                    <h4><i class="bi bi-lightbulb"></i> 智能使用指南</h4>
+                    <button class="close-btn" id="closeHelp">&times;</button>
+                </div>
+                <div class="help-modal-body">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h5>📁 上传文档</h5>
+                            <p>点击"选择文件"或直接拖拽文件到上传区域，支持PDF和Word格式</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h5>🔍 智能验证</h5>
+                            <p>系统自动验证文件格式，提取文档内容进行预处理</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h5>📋 招标分析</h5>
+                            <p>点击"招标文件分析"，AI智能提取废标条款和关键要求</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h5>✅ 合规检查</h5>
+                            <p>上传投标文件，点击"投标文件分析"进行合规性智能检查</p>
+                        </div>
+                    </div>
+                    <div class="help-tips">
+                        <h6><i class="bi bi-info-circle"></i> 重要提示</h6>
+                        <ul>
+                            <li>分析结果仅供参考，请结合实际情况判断</li>
+                            <li>建议人工复核关键条款</li>
+                            <li>文件大小限制：50MB</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('file-input');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileType = document.getElementById('fileType');
+            const fileSize = document.getElementById('fileSize');
+            const fileIcon = document.getElementById('fileIcon');
+            const actionBtn = document.getElementById('actionBtn'); //预览内容或查看信息
+            const fileStatus = document.getElementById('fileStatus');
+
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const analyzeBtn1 = document.getElementById('analyzeBtn1');
+        
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            const analysisResults = document.getElementById('analysisResults');
+            const contentAnalysis = document.getElementById('contentAnalysis');
+            
+            // 修改1: 调整文件输入框的父容器
+            const uploadContent = document.querySelector('.upload-content');
+            fileInput.parentNode.removeChild(fileInput); // 移除原位置的文件输入
+            uploadContent.appendChild(fileInput); // 将文件输入移动到按钮容器内
+
+            // 当前选中的文件和文件ID
+            let selectedFile = null;
+            let currentFileId = null;
+
+            // API基础URL - 根据实际后端地址修改
+            const API_BASE_URL = 'http://localhost:5000/api';
+
+            // 点击选择文件按钮
+            selectFileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();// 阻止冒泡到文件输入
+                fileInput.click();// 手动触发文件选择
+            });
+            
+            // 文件选择处理
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length) {
+                    handleFileSelection(e.target.files[0]);
+                }
+            });
+            
+            // 拖放区域功能
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                
+                if (e.dataTransfer.files.length) {
+                    handleFileSelection(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // 处理选择的文件
+            async function handleFileSelection(file) {
+                if (!file) return;
+                
+                // 获取文件扩展名
+                const extension = getFileExtension(file.name);
+                
+                // 验证文件类型
+                if (!isValidFile(extension)) {
+                    showError('请选择有效的Word(.doc/.docx)或PDF(.pdf)文件！');
+                    return;
+                }
+
+                try {
+                    // 上传文件到后端
+                    const uploadResult = await uploadFileToServer(file);
+                    
+                    // 保存文件和文件ID
+                    selectedFile = file;
+                    currentFileId = uploadResult.file_id;
+                    
+                    // 启用分析按钮
+                    analyzeBtn.disabled = false;
+                    analyzeBtn1.disabled = false;
+                    
+                    // 显示文件信息
+                    displayFileInfo(file, extension);
+                    
+                    // 显示上传成功信息
+                    showSuccess('文件上传成功！');
+                    
+                } catch (error) {
+                    showError(`文件上传失败: ${error.message}`);
+                }
+            }
+
+            // 上传文件到服务器
+            async function uploadFileToServer(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '上传失败');
+                }
+                
+                return await response.json();
+            }
+
+            // 点击招标文件分析按钮
+            analyzeBtn.addEventListener('click', async function(e) {
+                e.stopPropagation(); // 阻止事件冒泡
+                if (!selectedFile || !currentFileId) return;
+                await startTenderAnalysis();
+            });
+
+            // 点击投标文件分析按钮
+            analyzeBtn1.addEventListener('click', async function(e) {
+                e.stopPropagation(); // 阻止事件冒泡
+                if (!selectedFile || !currentFileId) return;
+                await startBidAnalysis();
+            });
+            
+            // 获取文件扩展名
+            function getFileExtension(filename) {
+                return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 1).toLowerCase();
+            }
+            
+            // 根据扩展名验证文件类型
+            function isValidFile(extension) {
+                const validExtensions = ['.pdf','.doc','.docx'];
+                return validExtensions.includes(extension);
+            }
+            
+            // 显示文件信息
+            function displayFileInfo(file, extension) {
+                // 显示文件信息区域
+                fileInfo.style.display = 'block';
+                
+                // 显示文件名
+                fileName.textContent = truncateFileName(file.name, 30);
+                
+                // 显示文件类型和大小
+                const fileTypeText = extension === '.pdf' ? 'PDF文档' : 'Word文档';
+                fileType.textContent = fileTypeText;
+                
+                const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+                fileSize.textContent = `${sizeInMB} MB`;
+                
+                // 设置文件图标
+                if (extension === '.pdf') {
+                    fileIcon.className = 'file-icon bi bi-file-earmark-pdf-fill text-danger';
+                } else {
+                    fileIcon.className = 'file-icon bi bi-file-earmark-word-fill text-primary';
+                }
+                
+                // 设置操作按钮
+                if (extension === '.pdf') {
+                    actionBtn.innerHTML = '<i class="bi bi-eye"></i> 预览';
+                    actionBtn.className = 'btn btn-primary btn-action';
+                    actionBtn.onclick = () => previewPDF(file);
+                } else {
+                    actionBtn.innerHTML = '<i class="bi bi-info-circle"></i> 信息';
+                    actionBtn.className = 'btn btn-info btn-action';
+                    actionBtn.onclick = () => showWordInfo(file);
+                }
+                
+                // 显示成功状态
+                fileStatus.textContent = '已验证';
+                fileStatus.className = 'text-success';
+            }
+            
+            // 文件名截断处理
+            function truncateFileName(name, maxLength) {
+                if (name.length <= maxLength) return name;
+                return name.substring(0, maxLength - 3) + '...';
+            }
+            
+            // PDF预览功能
+            function previewPDF(file) {
+                const fileURL = URL.createObjectURL(file);
+                window.open(fileURL, '_blank');
+            }
+            
+            // Word文件信息查看
+            function showWordInfo(file) {
+                const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+                const lastModified = new Date(file.lastModified).toLocaleString();
+                
+                alert(`Word文档信息：\n\n文件名：${file.name}\n文件大小：${sizeInMB} MB\n修改时间：${lastModified}\n\n提示：浏览器无法直接预览Word文档，请下载后查看`);
+            }
+            
+            // 文件下载功能
+            function downloadFile(file) {
+                const url = URL.createObjectURL(file);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            // 显示错误消息
+            function showError(message) {
+                fileInfo.style.display = 'block';
+                fileName.textContent = '错误';
+                fileType.textContent = '操作失败';
+                fileSize.textContent = '0 MB';
+                fileIcon.className = 'file-icon bi bi-exclamation-triangle-fill text-danger';
+                fileStatus.textContent = '错误';
+                fileStatus.className = 'text-danger';
+                
+                actionBtn.style.display = 'none';
+                
+                // 重置按钮状态
+                analyzeBtn.disabled = true;
+                analyzeBtn.innerHTML = '<i class="bi bi-graph-up"></i> 招标文件分析';
+                analyzeBtn1.disabled = true;
+                analyzeBtn1.innerHTML = '<i class="bi bi-graph-up"></i> 投标文件分析';
+                
+                // 隐藏进度条
+                progressContainer.style.display = 'none';
+                
+                // 3秒后隐藏错误信息
+                setTimeout(() => {
+                    fileInfo.style.display = 'none';
+                    actionBtn.style.display = 'block';
+                }, 3000);
+                
+                alert(message);
+            }
+
+            // 开始招标文件分析
+            async function startTenderAnalysis() {
+                // 禁用分析按钮
+                analyzeBtn.disabled = true;
+                analyzeBtn.innerHTML = '<i class="bi bi-hourglass spinner"></i> 分析中...';
+                
+                // 显示进度条
+                progressContainer.style.display = 'block';
+                
+                // 隐藏之前的结果
+                analysisResults.style.display = 'none';
+                
+                try {
+                    // 调用后端分析API
+                    const response = await fetch(`${API_BASE_URL}/analyze/tender`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            file_id: currentFileId
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || '分析失败');
+                    }
+                    
+                    const result = await response.json();
+                    
+                    // 完成进度条
+                    updateProgress(100);
+                    
+                    // 显示分析结果
+                    displayTenderAnalysisResults(result.result);
+                    
+                } catch (error) {
+                    showError(`招标文件分析失败: ${error.message}`);
+                } finally {
+                    // 重置按钮状态
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.innerHTML = '<i class="bi bi-graph-up"></i> 招标文件分析';
+                }
+            }
+
+            // 开始投标文件分析
+            async function startBidAnalysis() {
+                // 禁用分析按钮
+                analyzeBtn1.disabled = true;
+                analyzeBtn1.innerHTML = '<i class="bi bi-hourglass spinner"></i> 分析中...';
+                
+                // 显示进度条
+                progressContainer.style.display = 'block';
+                
+                // 隐藏之前的结果
+                analysisResults.style.display = 'none';
+                
+                try {
+                    // 调用后端分析API
+                    const response = await fetch(`${API_BASE_URL}/analyze/bid`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            file_id: currentFileId,
+                            tender_analysis_id: currentFileId // 可以关联之前的招标文件分析
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || '分析失败');
+                    }
+                    
+                    const result = await response.json();
+                    
+                    // 完成进度条
+                    updateProgress(100);
+                    
+                    // 显示分析结果
+                    displayBidAnalysisResults(result.result);
+                    
+                } catch (error) {
+                    showError(`投标文件分析失败: ${error.message}`);
+                } finally {
+                    // 重置按钮状态
+                    analyzeBtn1.disabled = false;
+                    analyzeBtn1.innerHTML = '<i class="bi bi-graph-up"></i> 投标文件分析';
+                }
+            }
+
+            // 更新进度条
+            function updateProgress(percent) {
+                progressBar.style.width = `${percent}%`;
+                progressBar.setAttribute('aria-valuenow', percent);
+                progressPercent.textContent = `${percent}%`;
+            }
+
+            // 显示招标文件分析结果
+            function displayTenderAnalysisResults(analysisData) {
+                // 显示分析结果区域
+                analysisResults.style.display = 'block';
+                
+                // 更新分析结果内容
+                const summary = analysisData.summary || '分析完成';
+                const invalidItems = analysisData.invalid_items || [];
+                const suggestions = analysisData.suggestions || [];
+                
+                let resultHtml = `
+                    <div class="analysis-item">
+                        <div class="analysis-title">
+                            <i class="bi bi-card-text"></i> 分析摘要
+                        </div>
+                        <div>${summary}</div>
+                    </div>
+                `;
+                
+                if (invalidItems.length > 0) {
+                    resultHtml += `
+                        <div class="analysis-item">
+                            <div class="analysis-title">
+                                <i class="bi bi-exclamation-triangle-fill text-warning"></i> 废标条款
+                            </div>
+                            <div class="list-group">
+                    `;
+                    
+                    invalidItems.forEach((item, index) => {
+                        const severityClass = getSeverityClass(item.severity);
+                        resultHtml += `
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">${item.category || '未分类'}</h6>
+                                    <span class="badge ${severityClass}">${item.severity || '中'}</span>
+                                </div>
+                                <p class="mb-1">${item.description || ''}</p>
+                                ${item.requirement ? `<small class="text-muted">要求: ${item.requirement}</small>` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    resultHtml += `
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                if (suggestions.length > 0) {
+                    resultHtml += `
+                        <div class="analysis-item">
+                            <div class="analysis-title">
+                                <i class="bi bi-lightbulb-fill text-info"></i> 建议
+                            </div>
+                            <ul class="mb-0">
+                                ${suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+                
+                contentAnalysis.innerHTML = resultHtml;
+            }
+
+            // 显示投标文件分析结果
+            function displayBidAnalysisResults(analysisData) {
+                // 显示分析结果区域
+                analysisResults.style.display = 'block';
+                
+                // 更新分析结果内容
+                const summary = analysisData.summary || '分析完成';
+                const complianceCheck = analysisData.compliance_check || {};
+                const issues = analysisData.issues || [];
+                const recommendations = analysisData.recommendations || [];
+                
+                let resultHtml = `
+                    <div class="analysis-item">
+                        <div class="analysis-title">
+                            <i class="bi bi-card-text"></i> 分析摘要
+                        </div>
+                        <div>${summary}</div>
+                    </div>
+                `;
+                
+                // 合规性检查结果
+                resultHtml += `
+                    <div class="analysis-item">
+                        <div class="analysis-title">
+                            <i class="bi bi-shield-check"></i> 合规性检查
+                        </div>
+                        <div>
+                            <p><strong>整体状态:</strong> 
+                                <span class="badge ${getComplianceClass(complianceCheck.overall_status)}">
+                                    ${complianceCheck.overall_status || '未知'}
+                                </span>
+                            </p>
+                            <p><strong>风险等级:</strong> 
+                                <span class="badge ${getRiskLevelClass(complianceCheck.risk_level)}">
+                                    ${complianceCheck.risk_level || '未知'}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                `;
+                
+                if (issues.length > 0) {
+                    resultHtml += `
+                        <div class="analysis-item">
+                            <div class="analysis-title">
+                                <i class="bi bi-exclamation-triangle-fill text-warning"></i> 发现的问题
+                            </div>
+                            <div class="list-group">
+                    `;
+                    
+                    issues.forEach((issue, index) => {
+                        const severityClass = getSeverityClass(issue.severity);
+                        resultHtml += `
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">${issue.category || '未分类'}</h6>
+                                    <span class="badge ${severityClass}">${issue.severity || '中'}</span>
+                                </div>
+                                <p class="mb-1">${issue.description || ''}</p>
+                                ${issue.suggestion ? `<small class="text-info">建议: ${issue.suggestion}</small><br>` : ''}
+                                ${issue.location ? `<small class="text-muted">位置: ${issue.location}</small>` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    resultHtml += `
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                if (recommendations.length > 0) {
+                    resultHtml += `
+                        <div class="analysis-item">
+                            <div class="analysis-title">
+                                <i class="bi bi-lightbulb-fill text-info"></i> 改进建议
+                            </div>
+                            <ul class="mb-0">
+                                ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+                
+                contentAnalysis.innerHTML = resultHtml;
+            }
+
+            // 获取严重程度对应的样式类
+            function getSeverityClass(severity) {
+                switch(severity) {
+                    case '高': return 'bg-danger';
+                    case '中': return 'bg-warning';
+                    case '低': return 'bg-info';
+                    default: return 'bg-secondary';
+                }
+            }
+
+            // 获取合规状态对应的样式类
+            function getComplianceClass(status) {
+                switch(status) {
+                    case '合规': return 'bg-success';
+                    case '存在风险': return 'bg-warning';
+                    case '不合规': return 'bg-danger';
+                    default: return 'bg-secondary';
+                }
+            }
+
+            // 获取风险等级对应的样式类
+            function getRiskLevelClass(level) {
+                switch(level) {
+                    case '低': return 'bg-success';
+                    case '中': return 'bg-warning';
+                    case '高': return 'bg-danger';
+                    default: return 'bg-secondary';
+                }
+            }
+
+            // 显示成功消息
+            function showSuccess(message) {
+                // 这里可以添加成功提示的UI
+                console.log('Success:', message);
+            }
+            
+            // 浮窗控制功能
+            const helpBtn = document.getElementById('helpBtn');
+            const helpModal = document.getElementById('helpModal');
+            const closeHelp = document.getElementById('closeHelp');
+            
+            // 打开帮助浮窗
+            helpBtn.addEventListener('click', function() {
+                helpModal.style.display = 'block';
+                document.body.style.overflow = 'hidden'; // 防止背景滚动
+            });
+            
+            // 关闭帮助浮窗
+            closeHelp.addEventListener('click', function() {
+                helpModal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            });
+            
+            // 点击浮窗外部关闭
+            helpModal.addEventListener('click', function(e) {
+                if (e.target === helpModal) {
+                    helpModal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
+            });
+            
+            // ESC键关闭浮窗
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && helpModal.style.display === 'block') {
+                    helpModal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
