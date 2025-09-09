@@ -37,12 +37,12 @@ venv.bak/
 # Environment variables
 .env
 
-# Database
+# Database files (runtime generated)
 *.db
 *.sqlite
 *.sqlite3
 
-# Uploads
+# Uploads directory and contents
 uploads/
 backend/uploads/
 
@@ -70,3 +70,7 @@ test.db
 # API keys and sensitive data
 **/api_key.txt
 **/secrets.json
+
+# Runtime directories that should be created automatically
+uploads/
+backend/uploads/
