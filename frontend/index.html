@@ -10,23 +10,253 @@
     <link rel="icon" href="../static/icon/Unicom1.png" type="image/png">
     <style>
         :root {
-            --primary-color: #4361ee;
-            --secondary-color: #3f37c9;
-            --success-color: #4cc9f0;
-            --danger-color: #f72585;
-            --analyze-color: #7209b7;
-            --light-bg: #f8f9fa;
-            --card-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-            --card-hover-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+            --primary-color: #2563eb;
+            --secondary-color: #1d4ed8;
+            --accent-color: #3b82f6;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --light-bg: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 25px rgba(0, 0, 0, 0.1);
+            --card-hover-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 20px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        /* 紫色主题 */
+        [data-theme="purple"] {
+            --primary-color: #7c3aed;
+            --secondary-color: #6d28d9;
+            --accent-color: #8b5cf6;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --light-bg: #faf7ff;
+            --border-color: #e9d5ff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        /* 绿色主题 */
+        [data-theme="green"] {
+            --primary-color: #059669;
+            --secondary-color: #047857;
+            --accent-color: #10b981;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --light-bg: #f0fdf4;
+            --border-color: #d1fae5;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        /* 橙色主题 */
+        [data-theme="orange"] {
+            --primary-color: #ea580c;
+            --secondary-color: #c2410c;
+            --accent-color: #f97316;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --light-bg: #fff7ed;
+            --border-color: #fed7aa;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        /* 深色主题 */
+        [data-theme="dark"] {
+            --primary-color: #3b82f6;
+            --secondary-color: #2563eb;
+            --accent-color: #60a5fa;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --light-bg: #1f2937;
+            --border-color: #374151;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
         }
         
         body {
-            background: white;
+            background: linear-gradient(135deg, var(--light-bg) 0%, #f1f5f9 100%);
             min-height: 100vh;
-            padding: 1rem 0.5rem;
+            padding: 1rem 0.5rem 50px 0.5rem;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             position: relative;
             overflow-x: hidden;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        /* 深色主题背景 */
+        [data-theme="dark"] body {
+            background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+        }
+
+        /* 顶部工具栏样式 */
+        .top-toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 20px;
+            z-index: 1002;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] .top-toolbar {
+            background: rgba(31, 41, 55, 0.95);
+            border-bottom-color: #374151;
+        }
+
+        .toolbar-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .toolbar-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .theme-panel {
+            position: relative;
+        }
+
+        .theme-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            display: none;
+            min-width: 200px;
+            margin-top: 5px;
+        }
+
+        [data-theme="dark"] .theme-dropdown {
+            background: rgba(31, 41, 55, 0.98);
+            border-color: #374151;
+        }
+
+        .theme-dropdown.show {
+            display: block;
+            animation: fadeInDown 0.3s ease-out;
+        }
+
+        .theme-dropdown-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .theme-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        .theme-item:hover {
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .theme-color-preview {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-item.active .theme-color-preview {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        .theme-name {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .theme-item.active .theme-name {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* 主题色彩定义 */
+        .color-blue { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+        .color-purple { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+        .color-green { background: linear-gradient(135deg, #059669, #047857); }
+        .color-orange { background: linear-gradient(135deg, #ea580c, #c2410c); }
+        .color-dark { background: linear-gradient(135deg, #374151, #1f2937); }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .top-toolbar {
+                padding: 6px 15px;
+                gap: 10px;
+            }
+            
+            .toolbar-button {
+                padding: 6px 10px;
+                font-size: 0.75rem;
+            }
+            
+            .theme-dropdown {
+                right: -10px;
+                min-width: 180px;
+            }
+            
+            .theme-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
         }
         
         /* 添加半透明背景图片 */
@@ -53,32 +283,59 @@
             max-width: 600px;
             position: relative;
             z-index: 1;
+            margin-top: 140px; /* 为顶部工具栏和固定header留出空间 */
         }
         
         .header {
-            text-align: center;
-            margin-bottom: 2rem;
+            position: fixed;
+            top: 50px; /* 在工具栏下方 */
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, 
+                rgba(67, 97, 238, 0.95) 0%, 
+                rgba(63, 55, 201, 0.95) 50%, 
+                rgba(67, 97, 238, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.3);
+            padding: 18px 30px;
+            z-index: 1000;
             animation: fadeInDown 1s ease-out;
+            box-shadow: 0 4px 25px rgba(67, 97, 238, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.1), 
+                transparent);
+            animation: headerShine 3s ease-in-out infinite;
         }
         
         .header h1 {
             color: white;
             font-weight: 700;
-            margin-bottom: 0.8rem;
-            font-size: 2.5rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            background: linear-gradient(45deg, #fff, #e3f2fd);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            margin: 0;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 2;
         }
         
-        .header p {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.2rem;
-            max-width: 600px;
-            margin: 0 auto;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        .header h1 i {
+            color: white;
+            font-size: 1.6rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         
         .card {
@@ -134,17 +391,19 @@
         .card-body {
             padding: 1.5rem;
             background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px; /* 添加完整圆角 */
         }
         
         .upload-area {
             border: 3px dashed #dee2e6;
-            border-radius: 16px;
-            padding: 2rem 1.5rem;
+            border-radius: 20px;
+            padding: 3rem 2rem;
             text-align: center;
             transition: all 0.4s ease;
             background: linear-gradient(145deg, #ffffff, #f8f9fa);
             position: relative;
             overflow: hidden;
+            margin-bottom: 1.5rem;
         }
         
         .upload-area::before {
@@ -607,6 +866,12 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
+        @keyframes headerShine {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: 100%; }
+        }
+        
         @keyframes slideDown {
             from { 
                 opacity: 0; 
@@ -651,17 +916,37 @@
             gap: 12px;
         }
         
+        /* 页脚样式 */
+        .page-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(67, 97, 238, 0.1);
+            padding: 8px 20px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #6c757d;
+            z-index: 999;
+        }
+        
         @media (max-width: 576px) {
             .card-body {
                 padding: 2rem;
             }
             
             .header h1 {
-                font-size: 2rem;
+                font-size: 1.4rem;
             }
             
-            .header p {
-                font-size: 1rem;
+            .header {
+                padding: 12px 20px;
+            }
+            
+            .header h1 i {
+                font-size: 1.2rem;
             }
             
             .upload-area {
@@ -719,6 +1004,11 @@
             .help-modal-body {
                 padding: 20px;
             }
+            
+            .page-footer {
+                font-size: 0.75rem;
+                padding: 6px 10px;
+            }
         }
 
         .spinner {
@@ -762,16 +1052,51 @@
     </style>
 </head>
 <body>
+    <!-- 顶部工具栏 -->
+    <div class="top-toolbar">
+        <div class="theme-panel">
+            <button class="toolbar-button" id="themeToggle">
+                <i class="bi bi-palette"></i> 主题
+            </button>
+            <div class="theme-dropdown" id="themeDropdown">
+                <div class="theme-dropdown-title">
+                    <i class="bi bi-palette"></i> 选择主题
+                </div>
+                <div class="theme-grid">
+                    <div class="theme-item active" data-theme="default">
+                        <div class="theme-color-preview color-blue"></div>
+                        <div class="theme-name">默认蓝色</div>
+                    </div>
+                    <div class="theme-item" data-theme="purple">
+                        <div class="theme-color-preview color-purple"></div>
+                        <div class="theme-name">高贵紫色</div>
+                    </div>
+                    <div class="theme-item" data-theme="green">
+                        <div class="theme-color-preview color-green"></div>
+                        <div class="theme-name">自然绿色</div>
+                    </div>
+                    <div class="theme-item" data-theme="orange">
+                        <div class="theme-color-preview color-orange"></div>
+                        <div class="theme-name">活力橙色</div>
+                    </div>
+                    <div class="theme-item" data-theme="dark">
+                        <div class="theme-color-preview color-dark"></div>
+                        <div class="theme-name">深色模式</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="toolbar-button" id="helpBtn">
+            <i class="bi bi-question-circle"></i> 使用指南
+        </button>
+    </div>
+
     <div class="container">
         <div class="header">
             <h1><i class="bi bi-shield-check"></i> 智能投标合规检查系统</h1>
-            <p>基于AI大模型的投标文件智能分析平台 | 支持Word文档（.doc, .docx）和PDF文件（.pdf）</p>
         </div>
         
         <div class="card">
-            <div class="card-header">
-                <h3><i class="bi bi-cpu"></i> AI智能文档分析中心</h3>
-            </div>
             <div class="card-body">
                 <div class="upload-area" id="dropZone">
                     <input type="file" id="file-input" class="file-input" accept=".doc,.docx,.pdf">
@@ -851,16 +1176,6 @@
                 </div>
 
             </div>
-        </div>
-        
-                </div>
-        </div>
-        
-        <!-- 帮助按钮 -->
-        <div class="help-button-container">
-            <button class="btn btn-help" id="helpBtn" title="使用指南">
-                <i class="bi bi-question-circle"></i> 使用指南
-            </button>
         </div>
         
         <!-- 帮助浮窗 -->
@@ -1042,8 +1357,12 @@
             // 点击投标文件分析按钮
             analyzeBtn1.addEventListener('click', async function(e) {
                 e.stopPropagation(); // 阻止事件冒泡
-                if (!selectedFile || !currentFileId) return;
-                await startBidAnalysis();
+                if (!selectedFile || !currentFileId) {
+                    alert('请先上传文件');
+                    return;
+                }
+                // 跳转到投标文件分析页面
+                window.location.href = 'bid_analysis.html';
             });
             
             // 获取文件扩展名
@@ -1476,7 +1795,83 @@
                     document.body.style.overflow = 'auto';
                 }
             });
+
+            // 主题切换功能
+            initThemeSwitcher();
+
+            function initThemeSwitcher() {
+                const themeToggle = document.getElementById('themeToggle');
+                const themeDropdown = document.getElementById('themeDropdown');
+                const themeItems = document.querySelectorAll('.theme-item');
+                const savedTheme = localStorage.getItem('bidAnalysisTheme') || 'default';
+                
+                // 应用保存的主题
+                if (savedTheme !== 'default') {
+                    document.documentElement.setAttribute('data-theme', savedTheme);
+                }
+                
+                // 更新激活状态
+                themeItems.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.dataset.theme === savedTheme) {
+                        item.classList.add('active');
+                    }
+                });
+                
+                // 主题下拉框切换
+                themeToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    themeDropdown.classList.toggle('show');
+                });
+                
+                // 点击外部关闭下拉框
+                document.addEventListener('click', () => {
+                    themeDropdown.classList.remove('show');
+                });
+                
+                // 防止点击下拉框内部时关闭
+                themeDropdown.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+                
+                // 主题选择
+                themeItems.forEach(item => {
+                    item.addEventListener('click', () => {
+                        const theme = item.dataset.theme;
+                        
+                        // 移除所有激活状态
+                        themeItems.forEach(i => i.classList.remove('active'));
+                        
+                        // 添加当前激活状态
+                        item.classList.add('active');
+                        
+                        // 应用主题
+                        if (theme === 'default') {
+                            document.documentElement.removeAttribute('data-theme');
+                        } else {
+                            document.documentElement.setAttribute('data-theme', theme);
+                        }
+                        
+                        // 保存主题设置
+                        localStorage.setItem('bidAnalysisTheme', theme);
+                        
+                        // 关闭下拉框
+                        themeDropdown.classList.remove('show');
+                        
+                        // 添加切换动画效果
+                        document.body.style.transition = 'all 0.3s ease';
+                        setTimeout(() => {
+                            document.body.style.transition = '';
+                        }, 300);
+                    });
+                });
+            }
         });
     </script>
+    
+    <!-- 页脚信息 -->
+    <div class="page-footer">
+        基于AI大模型的投标文件智能分析平台 | 支持Word文档（.doc, .docx）和PDF文件（.pdf）
+    </div>
 </body>
 </html>

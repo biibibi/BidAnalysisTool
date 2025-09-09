@@ -13,7 +13,7 @@ import json
 import traceback
 
 # 添加backend路径
-backend_path = os.path.join(os.path.dirname(__file__), 'backend')
+backend_path = os.path.join(os.path.dirname(__file__), '..', 'backend')
 sys.path.insert(0, backend_path)
 
 from file_handler import FileHandler
@@ -26,8 +26,8 @@ def main():
     print("=" * 60)
     
     # 文件路径
-    tender_file = r"c:\Users\win\Desktop\BidAnalysis\test\(定)招标文件-柯桥区2025年度数据安全运维服务项目2.doc"
-    bid_file = r"c:\Users\win\Desktop\BidAnalysis\test\9.4商务技术方案.docx"
+    tender_file = r"c:\Users\win\Desktop\BidAnalysis\test\testfile\招标文件.docx"
+    bid_file = r"c:\Users\win\Desktop\BidAnalysis\test\testfile\投标文件.docx"
     
     # 检查文件是否存在
     if not os.path.exists(tender_file):

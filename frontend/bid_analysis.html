@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 投标文件合规性检测 - BidAnalysis Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="icon" href="../static/icon/Unicom1.png" type="image/png">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1d4ed8;
+            --accent-color: #3b82f6;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --light-bg: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 25px rgba(0, 0, 0, 0.1);
+            --card-hover-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 20px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        /* 紫色主题 */
+        [data-theme="purple"] {
+            --primary-color: #7c3aed;
+            --secondary-color: #6d28d9;
+            --accent-color: #8b5cf6;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --light-bg: #faf7ff;
+            --border-color: #e9d5ff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        /* 绿色主题 */
+        [data-theme="green"] {
+            --primary-color: #059669;
+            --secondary-color: #047857;
+            --accent-color: #10b981;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --light-bg: #f0fdf4;
+            --border-color: #d1fae5;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        /* 橙色主题 */
+        [data-theme="orange"] {
+            --primary-color: #ea580c;
+            --secondary-color: #c2410c;
+            --accent-color: #f97316;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --light-bg: #fff7ed;
+            --border-color: #fed7aa;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        /* 深色主题 */
+        [data-theme="dark"] {
+            --primary-color: #3b82f6;
+            --secondary-color: #2563eb;
+            --accent-color: #60a5fa;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #06b6d4;
+            --light-bg: #1f2937;
+            --border-color: #374151;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--light-bg) 0%, #f1f5f9 100%);
+            min-height: 100vh;
+            padding: 0.5rem 0.5rem 50px 0.5rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        /* 深色主题背景 */
+        [data-theme="dark"] body {
+            background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+        }
+
+        /* 顶部工具栏样式 */
+        .top-toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 20px;
+            z-index: 1002;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] .top-toolbar {
+            background: rgba(31, 41, 55, 0.95);
+            border-bottom-color: #374151;
+        }
+
+        .toolbar-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .toolbar-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .theme-panel {
+            position: relative;
+        }
+
+        .theme-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            display: none;
+            min-width: 200px;
+            margin-top: 5px;
+        }
+
+        [data-theme="dark"] .theme-dropdown {
+            background: rgba(31, 41, 55, 0.98);
+            border-color: #374151;
+        }
+
+        .theme-dropdown.show {
+            display: block;
+            animation: fadeInDown 0.3s ease-out;
+        }
+
+        .theme-dropdown-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .theme-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        .theme-item:hover {
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .theme-color-preview {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-item.active .theme-color-preview {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+        .theme-name {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .theme-item.active .theme-name {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* 主题色彩定义 */
+        .color-blue { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+        .color-purple { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+        .color-green { background: linear-gradient(135deg, #059669, #047857); }
+        .color-orange { background: linear-gradient(135deg, #ea580c, #c2410c); }
+        .color-dark { background: linear-gradient(135deg, #374151, #1f2937); }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .top-toolbar {
+                padding: 6px 15px;
+                gap: 10px;
+            }
+            
+            .toolbar-button {
+                padding: 6px 10px;
+                font-size: 0.75rem;
+            }
+            
+            .theme-dropdown {
+                right: -10px;
+                min-width: 180px;
+            }
+            
+            .theme-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+        }
+        
+        /* 添加半透明背景图片 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background-image: url('../static/icon/Unicom1.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.08;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .container {
+            max-width: 1200px;
+            position: relative;
+            z-index: 1;
+            margin-top: 120px; /* 为顶部工具栏和固定header留出空间 */
+        }
+        
+        .header {
+            position: fixed;
+            top: 50px; /* 在工具栏下方 */
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, 
+                rgba(67, 97, 238, 0.95) 0%, 
+                rgba(63, 55, 201, 0.95) 50%, 
+                rgba(67, 97, 238, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 30px;
+            z-index: 1000;
+            animation: fadeInDown 1s ease-out;
+            box-shadow: 0 4px 25px rgba(67, 97, 238, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.1), 
+                transparent);
+            animation: headerShine 3s ease-in-out infinite;
+        }
+        
+        .header h1 {
+            color: white;
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            flex: 1;
+            justify-content: center;
+            z-index: 2;
+        }
+        
+        .header h1 i {
+            color: white;
+            font-size: 1.6rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            margin-bottom: 2rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-hover-shadow);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem 2rem;
+            border-bottom: none;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.25);
+        }
+        
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .card:hover .card-header::before {
+            left: 100%;
+        }
+        
+        .card-header h3 {
+            margin: 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.3rem;
+        }
+        
+        .card-body {
+            padding: 0;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 0 0 16px 16px;
+            overflow: hidden;
+        }
+        
+        /* 废标项卡片样式 */
+        .violation-item {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(67, 97, 238, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .violation-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+        
+        .violation-item:hover {
+            transform: translateX(8px);
+            box-shadow: 0 8px 25px rgba(67, 97, 238, 0.15);
+            border-color: var(--primary-color);
+        }
+        
+        .violation-item:hover::before {
+            width: 8px;
+        }
+        
+        .violation-header {
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+        
+        .violation-info {
+            flex: 1;
+        }
+        
+        .violation-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #343a40;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .violation-category {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .category-qualification {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            color: #1976d2;
+        }
+        
+        .category-technical {
+            background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+            color: #7b1fa2;
+        }
+        
+        .category-commercial {
+            background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+            color: #388e3c;
+        }
+        
+        .category-format {
+            background: linear-gradient(135deg, #fff3e0, #ffcc02);
+            color: #f57c00;
+        }
+        
+        .category-time {
+            background: linear-gradient(135deg, #ffebee, #ffcdd2);
+            color: #d32f2f;
+        }
+        
+        .violation-description {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        .violation-requirement {
+            background: rgba(67, 97, 238, 0.05);
+            border-left: 3px solid var(--primary-color);
+            padding: 0.8rem 1rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+        
+        .violation-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn-detect {
+            background: linear-gradient(135deg, var(--analyze-color), #5a189a);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(114, 9, 183, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-detect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-detect:hover::before {
+            left: 100%;
+        }
+        
+        .btn-detect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(114, 9, 183, 0.4);
+            color: white;
+        }
+        
+        .btn-detect:disabled {
+            background: linear-gradient(135deg, #cccccc, #999999);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .detection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            color: #6c757d;
+        }
+        
+        .status-detecting {
+            color: var(--warning-color);
+        }
+        
+        .status-compliant {
+            color: var(--success-color);
+        }
+        
+        .status-violation {
+            color: var(--danger-color);
+        }
+        
+        .status-warning {
+            color: var(--warning-color);
+        }
+        
+        /* AI检测结果区域 */
+        .ai-result-section {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border-radius: 15px;
+            border-left: 5px solid var(--analyze-color);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            display: none;
+            animation: fadeIn 0.6s ease;
+        }
+        
+        .ai-result-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            color: var(--analyze-color);
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .ai-result-content {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .result-item {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+        
+        .result-compliant {
+            background: rgba(76, 201, 240, 0.1);
+            border-left-color: var(--success-color);
+        }
+        
+        .result-violation {
+            background: rgba(247, 37, 133, 0.1);
+            border-left-color: var(--danger-color);
+        }
+        
+        .result-warning {
+            background: rgba(255, 193, 7, 0.1);
+            border-left-color: var(--warning-color);
+        }
+        
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .result-description {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+        
+        /* 返回按钮 */
+        .back-button {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 25px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 10px rgba(67, 97, 238, 0.3);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+        
+        /* 进度指示器 */
+        .progress-indicator {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border: 1px solid rgba(67, 97, 238, 0.1);
+        }
+        
+        .progress-stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        .stat-item {
+            flex: 1;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .stat-pending .stat-number { color: #6c757d; }
+        .stat-compliant .stat-number { color: var(--success-color); }
+        .stat-violation .stat-number { color: var(--danger-color); }
+        .stat-warning .stat-number { color: var(--warning-color); }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .spinner {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        
+        /* 页脚样式 */
+        .page-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(67, 97, 238, 0.1);
+            padding: 8px 20px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #6c757d;
+            z-index: 999;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                max-width: 100%;
+                padding: 0 1rem;
+            }
+            
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
+            .header {
+                padding: 10px 15px;
+                gap: 10px;
+            }
+            
+            .header h1 i {
+                font-size: 1.1rem;
+            }
+            
+            .back-button {
+                padding: 6px 12px;
+                font-size: 0.75rem;
+                gap: 4px;
+            }
+            
+            .back-button span {
+                display: none; /* 在移动端隐藏"返回主页"文字，只显示图标 */
+            }
+            
+            .violation-header {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .violation-actions {
+                justify-content: stretch;
+            }
+            
+            .btn-detect {
+                flex: 1;
+                min-width: 120px;
+            }
+            
+            .progress-stats {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .page-footer {
+                font-size: 0.75rem;
+                padding: 6px 10px;
+            }
+        }
+        
+        /* 表格样式 */
+        
+        .table {
+            margin-bottom: 0;
+            font-size: 0.85rem;
+            border-radius: 0 0 16px 16px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+        }
+        
+        .table thead {
+            border-bottom: 3px solid var(--border-color);
+        }
+        
+        .table th {
+            background: white;
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            font-weight: 600;
+            padding: 0.7rem 0.5rem;
+            font-size: 0.85rem;
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .table th:first-child {
+            border-top-left-radius: 0;
+            border-left: 2px solid var(--border-color);
+        }
+        
+        .table th:last-child {
+            border-top-right-radius: 0;
+            border-right: 2px solid var(--border-color);
+        }
+        
+        .table td {
+            padding: 0.5rem 0.4rem;
+            vertical-align: middle;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-primary);
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(37, 99, 235, 0.04);
+        }
+        
+        .check-category {
+            padding: 0.15rem 0.4rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            display: inline-block;
+            white-space: nowrap;
+            text-align: center;
+        }
+        
+        .check-title {
+            font-weight: 600;
+            color: #343a40;
+            font-size: 0.8rem;
+            margin-bottom: 0.1rem;
+            line-height: 1.3;
+        }
+        
+        .check-description {
+            color: #6c757d;
+            font-size: 0.75rem;
+            line-height: 1.3;
+        }
+        
+        .btn-check {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+            border: none;
+            padding: 0.25rem 0.6rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .btn-check:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-check:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status-badge {
+            padding: 0.15rem 0.4rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            white-space: nowrap;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .status-pending {
+            background: var(--light-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .status-checking {
+            background: linear-gradient(135deg, var(--warning-color), #e97f0b);
+            color: white;
+        }
+        
+        .status-pass {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+        }
+        
+        .status-fail {
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+            color: white;
+        }
+        
+        .result-cell {
+            max-width: 120px;
+            word-wrap: break-word;
+            font-size: 0.75rem;
+            line-height: 1.3;
+        }
+        
+        .serial-number {
+            font-weight: 600;
+            color: var(--primary-color);
+            text-align: center;
+        }
+
+        /* 批量操作按钮 */
+        .batch-actions {
+            text-align: center;
+            margin: 2rem 0;
+        }
+        
+        .btn-batch {
+            background: linear-gradient(135deg, var(--success-color), #38b000);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.4s ease;
+            box-shadow: 0 6px 20px rgba(76, 201, 240, 0.3);
+            margin: 0 10px;
+        }
+        
+        .btn-batch:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(76, 201, 240, 0.4);
+            color: white;
+        }
+        
+        .btn-batch:disabled {
+            background: linear-gradient(135deg, #cccccc, #999999);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 顶部工具栏 -->
+    <div class="top-toolbar">
+        <div class="theme-panel">
+            <button class="toolbar-button" id="themeToggle">
+                <i class="bi bi-palette"></i> 主题
+            </button>
+            <div class="theme-dropdown" id="themeDropdown">
+                <div class="theme-dropdown-title">
+                    <i class="bi bi-palette"></i> 选择主题
+                </div>
+                <div class="theme-grid">
+                    <div class="theme-item active" data-theme="default">
+                        <div class="theme-color-preview color-blue"></div>
+                        <div class="theme-name">默认蓝色</div>
+                    </div>
+                    <div class="theme-item" data-theme="purple">
+                        <div class="theme-color-preview color-purple"></div>
+                        <div class="theme-name">高贵紫色</div>
+                    </div>
+                    <div class="theme-item" data-theme="green">
+                        <div class="theme-color-preview color-green"></div>
+                        <div class="theme-name">自然绿色</div>
+                    </div>
+                    <div class="theme-item" data-theme="orange">
+                        <div class="theme-color-preview color-orange"></div>
+                        <div class="theme-name">活力橙色</div>
+                    </div>
+                    <div class="theme-item" data-theme="dark">
+                        <div class="theme-color-preview color-dark"></div>
+                        <div class="theme-name">深色模式</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="toolbar-button" id="helpBtn">
+            <i class="bi bi-question-circle"></i> 使用指南
+        </button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-button">
+                <i class="bi bi-arrow-left"></i> <span>返回主页</span>
+            </a>
+            <h1><i class="bi bi-clipboard-check"></i> 投标文件合规性检测</h1>
+        </div>
+
+        <!-- 进度指示器 -->
+        <div class="progress-indicator">
+            <h4><i class="bi bi-bar-chart-line"></i> 检测进度统计</h4>
+            <div class="progress-stats">
+                <div class="stat-item stat-pending">
+                    <div class="stat-number" id="pendingCount">15</div>
+                    <div class="stat-label">待检测</div>
+                </div>
+                <div class="stat-item stat-compliant">
+                    <div class="stat-number" id="compliantCount">0</div>
+                    <div class="stat-label">合规</div>
+                </div>
+                <div class="stat-item stat-warning">
+                    <div class="stat-number" id="warningCount">0</div>
+                    <div class="stat-label">警告</div>
+                </div>
+                <div class="stat-item stat-violation">
+                    <div class="stat-number" id="violationCount">0</div>
+                    <div class="stat-label">违规</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 批量操作 -->
+        <div class="batch-actions">
+            <button class="btn btn-batch" id="checkAllBtn">
+                <i class="bi bi-check-all"></i> 一键检测全部
+            </button>
+            <button class="btn btn-batch" id="exportReportBtn" disabled>
+                <i class="bi bi-download"></i> 导出检测报告
+            </button>
+        </div>
+
+        <!-- 废标项检测列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="bi bi-list-check"></i> 常见废标项检测清单</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 10%;">序号</th>
+                            <th style="width: 12%;">类别</th>
+                            <th style="width: 20%;">检测项目</th>
+                            <th style="width: 25%;">要求说明</th>
+                            <th style="width: 10%;">状态</th>
+                            <th style="width: 10%;">操作</th>
+                            <th style="width: 13%;">检测结果</th>
+                        </tr>
+                    </thead>
+                    <tbody id="violationTableBody">
+                        <!-- 废标项将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AI综合检测结果 -->
+        <div class="ai-result-section" id="aiResultSection">
+            <div class="ai-result-header">
+                <i class="bi bi-robot"></i>
+                AI智能分析结果
+            </div>
+            <div class="ai-result-content" id="aiResultContent">
+                <!-- AI分析结果将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 常见废标项数据 - 基于实际投标要求整理
+        const violationItems = [
+            {
+                id: 'qualification_license',
+                title: '营业执照及资质证书',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查是否提供有效的营业执照、相关资质证书，证书是否在有效期内',
+                requirement: '必须提供营业执照复印件并加盖公章，相关行业资质证书必须在有效期内',
+                icon: 'bi-award'
+            },
+            {
+                id: 'performance_requirement',
+                title: '业绩要求',
+                category: '资质要求', 
+                categoryClass: 'category-qualification',
+                description: '检查是否满足招标文件规定的近年来类似项目业绩要求',
+                requirement: '提供近3年内类似项目业绩证明材料，包括合同复印件和客户证明',
+                icon: 'bi-graph-up'
+            },
+            {
+                id: 'technical_specs',
+                title: '技术规格响应',
+                category: '技术要求',
+                categoryClass: 'category-technical',
+                description: '检查技术方案是否完全响应招标文件的技术规格要求',
+                requirement: '技术方案必须逐条响应招标文件技术规格，不得有负偏离',
+                icon: 'bi-gear'
+            },
+            {
+                id: 'technical_standards',
+                title: '技术标准符合性',
+                category: '技术要求',
+                categoryClass: 'category-technical', 
+                description: '检查产品或服务是否符合国家、行业相关技术标准',
+                requirement: '必须符合国标、行标等相关技术标准，提供标准符合性声明',
+                icon: 'bi-clipboard-check'
+            },
+            {
+                id: 'price_format',
+                title: '报价格式',
+                category: '商务要求',
+                categoryClass: 'category-commercial',
+                description: '检查投标报价是否按照招标文件规定的格式填写',
+                requirement: '严格按照招标文件提供的报价表格式填写，不得修改表格结构',
+                icon: 'bi-currency-dollar'
+            },
+            {
+                id: 'price_calculation',
+                title: '价格计算准确性',
+                category: '商务要求',
+                categoryClass: 'category-commercial',
+                description: '检查投标报价计算是否准确，是否有计算错误',
+                requirement: '所有价格计算必须准确无误，大小写金额必须一致',
+                icon: 'bi-calculator'
+            },
+            {
+                id: 'payment_terms',
+                title: '付款条件',
+                category: '商务要求',
+                categoryClass: 'category-commercial',
+                description: '检查付款条件是否符合招标文件要求',
+                requirement: '付款条件不得偏离招标文件要求，不得增加额外付款条件',
+                icon: 'bi-credit-card'
+            },
+            {
+                id: 'delivery_period',
+                title: '交货期',
+                category: '商务要求',
+                categoryClass: 'category-commercial',
+                description: '检查承诺的交货期是否满足招标文件要求',
+                requirement: '交货期不得超过招标文件规定的最长交货期',
+                icon: 'bi-truck'
+            },
+            {
+                id: 'document_binding',
+                title: '文件装订',
+                category: '格式要求',
+                categoryClass: 'category-format',
+                description: '检查投标文件是否按要求装订，封面格式是否正确',
+                requirement: '按照招标文件要求装订，正本1份、副本若干份，封面格式统一',
+                icon: 'bi-book'
+            },
+            {
+                id: 'signature_seal',
+                title: '签名盖章',
+                category: '格式要求',
+                categoryClass: 'category-format',
+                description: '检查投标文件是否按要求签名盖章，印章是否清晰',
+                requirement: '法定代表人签字或授权代表签字，加盖企业公章，印章清晰',
+                icon: 'bi-patch-check'
+            },
+            {
+                id: 'page_numbering',
+                title: '页码编制',
+                category: '格式要求',
+                categoryClass: 'category-format',
+                description: '检查投标文件页码是否连续编制，是否有遗漏',
+                requirement: '投标文件必须连续编制页码，不得有缺页、漏页现象',
+                icon: 'bi-123'
+            },
+            {
+                id: 'submission_deadline',
+                title: '递交时间',
+                category: '时间要求',
+                categoryClass: 'category-time',
+                description: '检查投标文件是否在规定时间内递交',
+                requirement: '必须在招标文件规定的投标截止时间前递交投标文件',
+                icon: 'bi-clock'
+            },
+            {
+                id: 'validity_period',
+                title: '投标有效期',
+                category: '时间要求',
+                categoryClass: 'category-time',
+                description: '检查投标文件承诺的有效期是否满足要求',
+                requirement: '投标有效期不得少于招标文件规定的最短有效期',
+                icon: 'bi-calendar-check'
+            },
+            {
+                id: 'bid_bond',
+                title: '投标保证金',
+                category: '商务要求',
+                categoryClass: 'category-commercial',
+                description: '检查是否按要求提交投标保证金，金额是否正确',
+                requirement: '按招标文件要求提交投标保证金，金额准确，形式符合要求',
+                icon: 'bi-shield-check'
+            },
+            {
+                id: 'authorization_letter',
+                title: '授权委托书',
+                category: '格式要求',
+                categoryClass: 'category-format',
+                description: '检查授权委托书格式是否正确，授权范围是否明确',
+                requirement: '法定代表人授权委托书格式正确，授权范围明确，印章齐全',
+                icon: 'bi-person-check'
+            }
+        ];
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+            setupEventListeners();
+            initThemeSwitcher();
+        });
+
+        // 初始化页面
+        function initializePage() {
+            renderViolationItems();
+            updateProgressStats();
+        }
+
+        // 渲染废标项列表
+        function renderViolationItems() {
+            const violationTableBody = document.getElementById('violationTableBody');
+            
+            violationItems.forEach((item, index) => {
+                const itemHtml = `
+                    <tr data-id="${item.id}">
+                        <td class="serial-number">${index + 1}</td>
+                        <td>
+                            <span class="check-category ${item.categoryClass}">
+                                ${item.category}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="check-title">
+                                <i class="bi ${item.icon}"></i>
+                                ${item.title}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="check-description">
+                                ${item.requirement}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge status-pending" id="status-${item.id}">
+                                待检测
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-check" onclick="startDetection('${item.id}')">
+                                开始检测
+                            </button>
+                        </td>
+                        <td class="result-cell" id="result-${item.id}">
+                            <span class="text-muted">-</span>
+                        </td>
+                    </tr>
+                `;
+                violationTableBody.innerHTML += itemHtml;
+            });
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 一键检测全部
+            document.getElementById('checkAllBtn').addEventListener('click', function() {
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-hourglass spinner"></i> 检测中...';
+                
+                // 模拟批量检测
+                violationItems.forEach((item, index) => {
+                    setTimeout(() => {
+                        startDetection(item.id);
+                    }, index * 1000); // 每秒检测一项
+                });
+                
+                // 检测完成后恢复按钮
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-check-all"></i> 一键检测全部';
+                    document.getElementById('exportReportBtn').disabled = false;
+                    showAIResults();
+                }, violationItems.length * 1000 + 2000);
+            });
+
+            // 导出报告
+            document.getElementById('exportReportBtn').addEventListener('click', function() {
+                exportDetectionReport();
+            });
+        }
+
+        // 开始单项检测
+        function startDetection(itemId) {
+            const statusElement = document.getElementById(`status-${itemId}`);
+            const button = document.querySelector(`[data-id="${itemId}"] .btn-check`);
+            
+            // 更新状态为检测中
+            statusElement.className = 'status-badge status-checking';
+            statusElement.innerHTML = '检测中...';
+            button.disabled = true;
+            button.innerHTML = '检测中...';
+            
+            // 模拟AI检测过程（2-3秒）
+            setTimeout(() => {
+                const result = simulateDetection(itemId);
+                updateDetectionResult(itemId, result);
+                updateProgressStats();
+            }, Math.random() * 2000 + 1000); // 1-3秒随机检测时间
+        }
+
+        // 模拟AI检测结果
+        function simulateDetection(itemId) {
+            // 模拟不同的检测结果
+            const outcomes = ['compliant', 'violation', 'warning'];
+            const weights = [0.6, 0.2, 0.2]; // 60%合规, 20%违规, 20%警告
+            
+            const random = Math.random();
+            let cumulative = 0;
+            
+            for (let i = 0; i < outcomes.length; i++) {
+                cumulative += weights[i];
+                if (random <= cumulative) {
+                    return {
+                        status: outcomes[i],
+                        confidence: Math.floor(Math.random() * 20) + 80, // 80-99%置信度
+                        details: generateResultDetails(itemId, outcomes[i])
+                    };
+                }
+            }
+            
+            return {
+                status: 'compliant',
+                confidence: 95,
+                details: generateResultDetails(itemId, 'compliant')
+            };
+        }
+
+        // 生成检测结果详情
+        function generateResultDetails(itemId, status) {
+            const item = violationItems.find(item => item.id === itemId);
+            
+            const details = {
+                compliant: {
+                    message: `${item.title}检测合规`,
+                    description: '经AI分析，该项目完全符合招标文件要求，无违规风险。',
+                    suggestions: []
+                },
+                violation: {
+                    message: `${item.title}存在违规风险`,
+                    description: '经AI分析，发现该项目存在明显违规问题，可能导致废标。',
+                    suggestions: ['请仔细核对招标文件要求', '建议补充相关材料', '确保格式完全符合要求']
+                },
+                warning: {
+                    message: `${item.title}需要注意`,
+                    description: '经AI分析，该项目基本符合要求，但存在一些需要注意的问题。',
+                    suggestions: ['建议进一步确认细节', '核实相关要求是否完全满足']
+                }
+            };
+            
+            return details[status];
+        }
+
+        // 更新检测结果
+        // 更新检测结果
+        function updateDetectionResult(itemId, result) {
+            const statusElement = document.getElementById(`status-${itemId}`);
+            const resultElement = document.getElementById(`result-${itemId}`);
+            const button = document.querySelector(`[data-id="${itemId}"] .btn-check`);
+            
+            // 更新状态显示
+            const statusConfig = {
+                compliant: {
+                    class: 'status-badge status-pass',
+                    text: '合规'
+                },
+                violation: {
+                    class: 'status-badge status-fail',
+                    text: '违规'
+                },
+                warning: {
+                    class: 'status-badge status-checking',
+                    text: '警告'
+                }
+            };
+            
+            const config = statusConfig[result.status];
+            statusElement.className = config.class;
+            statusElement.innerHTML = config.text;
+            
+            // 更新结果列
+            resultElement.innerHTML = `
+                <div style="font-size: 0.75rem;">
+                    <div style="font-weight: 600; margin-bottom: 2px;">${result.details.message}</div>
+                    <div style="color: #6c757d;">置信度: ${result.confidence}%</div>
+                </div>
+            `;
+            
+            // 恢复按钮状态
+            button.disabled = false;
+            button.innerHTML = '重新检测';
+            
+            // 存储结果用于后续显示
+            if (!window.detectionResults) {
+                window.detectionResults = {};
+            }
+            window.detectionResults[itemId] = result;
+        }
+
+        // 更新进度统计
+        function updateProgressStats() {
+            const results = window.detectionResults || {};
+            const total = violationItems.length;
+            
+            let compliant = 0, violation = 0, warning = 0;
+            
+            Object.values(results).forEach(result => {
+                switch(result.status) {
+                    case 'compliant': compliant++; break;
+                    case 'violation': violation++; break;
+                    case 'warning': warning++; break;
+                }
+            });
+            
+            const pending = total - (compliant + violation + warning);
+            
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('compliantCount').textContent = compliant;
+            document.getElementById('warningCount').textContent = warning;
+            document.getElementById('violationCount').textContent = violation;
+        }
+
+        // 显示AI综合分析结果
+        function showAIResults() {
+            const resultsSection = document.getElementById('aiResultSection');
+            const contentElement = document.getElementById('aiResultContent');
+            
+            const results = window.detectionResults || {};
+            
+            if (Object.keys(results).length === 0) {
+                return;
+            }
+            
+            // 统计结果
+            let compliant = 0, violation = 0, warning = 0;
+            Object.values(results).forEach(result => {
+                switch(result.status) {
+                    case 'compliant': compliant++; break;
+                    case 'violation': violation++; break;
+                    case 'warning': warning++; break;
+                }
+            });
+            
+            // 生成综合评估
+            let overallStatus = 'compliant';
+            let overallClass = 'result-compliant';
+            let overallIcon = 'bi-check-circle-fill';
+            let overallMessage = '投标文件整体合规';
+            
+            if (violation > 0) {
+                overallStatus = 'violation';
+                overallClass = 'result-violation';
+                overallIcon = 'bi-x-circle-fill';
+                overallMessage = '投标文件存在违规风险';
+            } else if (warning > 0) {
+                overallStatus = 'warning';
+                overallClass = 'result-warning';
+                overallIcon = 'bi-exclamation-triangle-fill';
+                overallMessage = '投标文件基本合规，需注意细节';
+            }
+            
+            // 生成详细结果HTML
+            let detailsHtml = '';
+            Object.entries(results).forEach(([itemId, result]) => {
+                const item = violationItems.find(v => v.id === itemId);
+                const resultClass = `result-${result.status}`;
+                const resultIcon = {
+                    compliant: 'bi-check-circle',
+                    violation: 'bi-x-circle', 
+                    warning: 'bi-exclamation-triangle'
+                }[result.status];
+                
+                detailsHtml += `
+                    <div class="result-item ${resultClass}">
+                        <div class="result-title">
+                            <i class="bi ${resultIcon}"></i>
+                            ${item.title}
+                        </div>
+                        <div class="result-description">
+                            ${result.details.description}
+                            ${result.details.suggestions.length > 0 ? 
+                                '<br><strong>建议:</strong> ' + result.details.suggestions.join('；') : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            contentElement.innerHTML = `
+                <div class="result-item ${overallClass}">
+                    <div class="result-title">
+                        <i class="bi ${overallIcon}"></i>
+                        综合评估结果
+                    </div>
+                    <div class="result-description">
+                        ${overallMessage}。共检测 ${Object.keys(results).length} 项：
+                        合规 ${compliant} 项，警告 ${warning} 项，违规 ${violation} 项。
+                        ${violation > 0 ? '建议重点关注违规项目，及时修正后重新检测。' : ''}
+                    </div>
+                </div>
+                ${detailsHtml}
+            `;
+            
+            resultsSection.style.display = 'block';
+        }
+
+        // 导出检测报告
+        function exportDetectionReport() {
+            const results = window.detectionResults || {};
+            
+            if (Object.keys(results).length === 0) {
+                alert('请先完成检测再导出报告');
+                return;
+            }
+            
+            // 生成报告内容
+            let reportContent = '投标文件合规性检测报告\n';
+            reportContent += '生成时间：' + new Date().toLocaleString() + '\n\n';
+            
+            // 统计摘要
+            let compliant = 0, violation = 0, warning = 0;
+            Object.values(results).forEach(result => {
+                switch(result.status) {
+                    case 'compliant': compliant++; break;
+                    case 'violation': violation++; break;
+                    case 'warning': warning++; break;
+                }
+            });
+            
+            reportContent += '检测摘要：\n';
+            reportContent += `总检测项目：${Object.keys(results).length}\n`;
+            reportContent += `合规项目：${compliant}\n`;
+            reportContent += `警告项目：${warning}\n`;
+            reportContent += `违规项目：${violation}\n\n`;
+            
+            // 详细结果
+            reportContent += '详细检测结果：\n';
+            Object.entries(results).forEach(([itemId, result]) => {
+                const item = violationItems.find(v => v.id === itemId);
+                reportContent += `\n${item.title}：${result.status} (置信度：${result.confidence}%)\n`;
+                reportContent += `说明：${result.details.description}\n`;
+                if (result.details.suggestions.length > 0) {
+                    reportContent += `建议：${result.details.suggestions.join('；')}\n`;
+                }
+            });
+            
+            // 创建下载链接
+            const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '投标文件合规性检测报告_' + new Date().toISOString().slice(0, 10) + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // 显示成功提示
+            alert('检测报告已导出到下载文件夹');
+        }
+
+        // 主题切换功能
+        function initThemeSwitcher() {
+            const themeToggle = document.getElementById('themeToggle');
+            const themeDropdown = document.getElementById('themeDropdown');
+            const themeItems = document.querySelectorAll('.theme-item');
+            const savedTheme = localStorage.getItem('bidAnalysisTheme') || 'default';
+            
+            // 应用保存的主题
+            if (savedTheme !== 'default') {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            }
+            
+            // 更新激活状态
+            themeItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.theme === savedTheme) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // 主题下拉框切换
+            themeToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                themeDropdown.classList.toggle('show');
+            });
+            
+            // 点击外部关闭下拉框
+            document.addEventListener('click', () => {
+                themeDropdown.classList.remove('show');
+            });
+            
+            // 防止点击下拉框内部时关闭
+            themeDropdown.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            
+            // 主题选择
+            themeItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const theme = item.dataset.theme;
+                    
+                    // 移除所有激活状态
+                    themeItems.forEach(i => i.classList.remove('active'));
+                    
+                    // 添加当前激活状态
+                    item.classList.add('active');
+                    
+                    // 应用主题
+                    if (theme === 'default') {
+                        document.documentElement.removeAttribute('data-theme');
+                    } else {
+                        document.documentElement.setAttribute('data-theme', theme);
+                    }
+                    
+                    // 保存主题设置
+                    localStorage.setItem('bidAnalysisTheme', theme);
+                    
+                    // 关闭下拉框
+                    themeDropdown.classList.remove('show');
+                    
+                    // 添加切换动画效果
+                    document.body.style.transition = 'all 0.3s ease';
+                    setTimeout(() => {
+                        document.body.style.transition = '';
+                    }, 300);
+                });
+            });
+        }
+    </script>
+    
+    <!-- 页脚信息 -->
+    <div class="page-footer">
+        基于参考标准的逐项合规性检查 | 智能识别废标风险点 | 提供专业改进建议
+    </div>
+</body>
+
+</html>
