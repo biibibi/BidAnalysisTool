@@ -23,7 +23,7 @@ AI Agent 管理器
 版本：1.0
 """
 
-from typing import Dict, Any, Optional, List, Type
+from typing import Dict, Any, Optional, List
 import logging
 from .base_agent import BaseAgent
 from .project_info_agent import ProjectInfoAgent

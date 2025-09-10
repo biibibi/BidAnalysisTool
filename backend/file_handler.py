@@ -11,11 +11,13 @@
     2. 文件上传和存储管理
     3. PDF文档内容提取
     4. Word文档内容提取
-    5. 文件信息获取和管理
+    5. 文本文件内容提取
+    6. 文件信息获取和管理
 
 支持格式：
     - PDF (.pdf) - 使用PyPDF2库
     - Word文档 (.docx) - 使用python-docx库
+    - 文本文件 (.txt) - 支持多种编码
     - 计划支持 (.doc) - 需要额外转换工具
 
 安全特性：
@@ -38,13 +40,11 @@
 """
 
 import os
-import uuid
 from werkzeug.utils import secure_filename
 from pathlib import Path
 import docx
 import PyPDF2
 # import fitz  # PyMuPDF - 可选的PDF处理库，如果安装失败可注释掉
-from typing import Optional
 
 # 尝试导入doc文件处理库
 try:
@@ -80,7 +80,7 @@ class FileHandler:
     """
     
     # 定义允许上传的文件扩展名（白名单策略）
-    ALLOWED_EXTENSIONS = {'.pdf', '.doc', '.docx'}
+    ALLOWED_EXTENSIONS = {'.pdf', '.doc', '.docx', '.txt'}
     
     def __init__(self):
         """
@@ -113,6 +113,7 @@ class FileHandler:
             - .pdf: PDF文档
             - .docx: Word 2007+文档
             - .doc: Word 97-2003文档（计划支持）
+            - .txt: 纯文本文件
             
         安全考虑：
             - 使用白名单而非黑名单策略
@@ -159,11 +160,15 @@ class FileHandler:
             - 目录不存在会自动创建
             - 文件保存失败会抛出异常
         """
+        # 从原始文件名直接提取扩展名，避免secure_filename移除中文字符
+        file_ext = Path(file.filename).suffix.lower()
+        
         # 使用werkzeug安全处理文件名，防止路径遍历攻击
         filename = secure_filename(file.filename)
         
-        # 提取原始文件扩展名
-        file_ext = Path(filename).suffix.lower()
+        # 如果secure_filename移除了所有字符（比如中文文件名），使用默认名称
+        if not filename:
+            filename = "file"
         
         # 使用UUID生成唯一的存储文件名，避免冲突
         new_filename = f"{file_id}{file_ext}"
@@ -194,6 +199,7 @@ class FileHandler:
             - PDF (.pdf): 使用PyPDF2提取文本
             - Word (.docx): 使用python-docx提取文本和表格
             - Word (.doc): 计划支持，当前会抛出异常
+            - Text (.txt): 直接读取文本内容
             
         提取内容：
             - 文档正文文本
@@ -219,6 +225,8 @@ class FileHandler:
                 return self._extract_pdf_content(file_path)
             elif file_ext in ['.doc', '.docx']:
                 return self._extract_word_content(file_path)
+            elif file_ext == '.txt':
+                return self._extract_text_content(file_path)
             else:
                 raise ValueError(f"不支持的文件类型: {file_ext}")
         except Exception as e:
@@ -399,7 +407,7 @@ class FileHandler:
         import platform
         if platform.system() == "Windows":
             try:
-                import win32com.client
+                import win32com.client  # type: ignore
                 
                 # 获取绝对路径
                 abs_path = os.path.abspath(file_path)
@@ -441,6 +449,69 @@ class FileHandler:
             "3. 在Windows环境下确保已安装Microsoft Word\n"
             "4. 尝试用其他工具转换文件格式"
         )
+    
+    def _extract_text_content(self, file_path: str) -> str:
+        """
+        提取文本文件内容（私有方法）
+        ============================
+        
+        直接读取纯文本文件的内容。
+        支持多种字符编码自动检测。
+        
+        Args:
+            file_path (str): 文本文件路径
+            
+        Returns:
+            str: 提取的文本内容
+            
+        编码支持：
+            1. UTF-8 - 优先尝试（现代标准）
+            2. GBK - 中文编码支持
+            3. UTF-16 - Unicode编码
+            4. Latin-1 - 兜底编码（几乎不会失败）
+            
+        特性：
+            - 自动编码检测和转换
+            - 保持原始文本格式
+            - 错误处理和降级策略
+            
+        局限性：
+            - 无法处理二进制文件
+            - 编码检测可能不完全准确
+            
+        异常处理：
+            - 文件不存在
+            - 权限不足
+            - 编码错误
+            - 文件损坏
+        """
+        try:
+            # 编码尝试列表，按优先级排序
+            encodings = ['utf-8', 'gbk', 'utf-16', 'latin-1']
+            
+            for encoding in encodings:
+                try:
+                    # 尝试使用当前编码读取文件
+                    with open(file_path, 'r', encoding=encoding) as file:
+                        content = file.read()
+                        
+                    # 如果成功读取且内容不为空，返回内容
+                    if content is not None:
+                        return content.strip()
+                        
+                except UnicodeDecodeError:
+                    # 当前编码失败，尝试下一个
+                    continue
+                except Exception as e:
+                    # 其他错误（如文件不存在、权限问题）
+                    raise Exception(f"读取文本文件时发生错误: {str(e)}")
+            
+            # 所有编码都失败
+            raise Exception("无法识别文件编码，请确认文件是有效的文本文件")
+            
+        except Exception as e:
+            # 抛出详细的错误信息
+            raise Exception(f"文本文件内容提取失败: {str(e)}")
     
     def get_file_info(self, file_path: str) -> dict:
         """

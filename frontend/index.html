@@ -107,27 +107,88 @@
             top: 0;
             left: 0;
             right: 0;
-            background: rgba(255, 255, 255, 0.95);
+            background: linear-gradient(135deg, 
+                var(--primary-color) 0%, 
+                var(--secondary-color) 50%, 
+                var(--primary-color) 100%);
             backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--border-color);
-            padding: 8px 20px;
+            border-bottom: 3px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 20px;
             z-index: 1002;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             align-items: center;
-            gap: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 25px rgba(var(--primary-color), 0.2);
+            animation: fadeInDown 1s ease-out;
         }
 
         [data-theme="dark"] .top-toolbar {
-            background: rgba(31, 41, 55, 0.95);
+            background: linear-gradient(135deg, 
+                rgba(31, 41, 55, 0.95) 0%, 
+                rgba(17, 24, 39, 0.95) 50%, 
+                rgba(31, 41, 55, 0.95) 100%);
             border-bottom-color: #374151;
         }
 
-        .toolbar-button {
-            background: var(--primary-color);
+        /* 不同主题下的工具栏样式 */
+        [data-theme="purple"] .top-toolbar {
+            background: linear-gradient(135deg, 
+                rgba(124, 58, 237, 0.95) 0%, 
+                rgba(109, 40, 217, 0.95) 50%, 
+                rgba(124, 58, 237, 0.95) 100%);
+            box-shadow: 0 4px 25px rgba(124, 58, 237, 0.2);
+        }
+
+        [data-theme="green"] .top-toolbar {
+            background: linear-gradient(135deg, 
+                rgba(5, 150, 105, 0.95) 0%, 
+                rgba(4, 120, 87, 0.95) 50%, 
+                rgba(5, 150, 105, 0.95) 100%);
+            box-shadow: 0 4px 25px rgba(5, 150, 105, 0.2);
+        }
+
+        [data-theme="orange"] .top-toolbar {
+            background: linear-gradient(135deg, 
+                rgba(234, 88, 12, 0.95) 0%, 
+                rgba(194, 65, 12, 0.95) 50%, 
+                rgba(234, 88, 12, 0.95) 100%);
+            box-shadow: 0 4px 25px rgba(234, 88, 12, 0.2);
+        }
+
+        /* 深色主题下的按钮样式 */
+        [data-theme="dark"] .toolbar-button {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        [data-theme="dark"] .toolbar-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* 工具栏标题样式 */
+        .toolbar-title h1 {
             color: white;
-            border: none;
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 工具栏动作区域 */
+        .toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .toolbar-button {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 8px;
             padding: 8px 12px;
             font-size: 0.8rem;
@@ -137,11 +198,14 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            backdrop-filter: blur(10px);
         }
 
         .toolbar-button:hover {
+            background: rgba(255, 255, 255, 0.35);
+            border-color: rgba(255, 255, 255, 0.5);
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
         }
 
         .theme-panel {
@@ -280,29 +344,169 @@
         /* 简化的动态背景效果 */
         
         .container {
-            max-width: 600px;
+            max-width: 500px;
             position: relative;
             z-index: 1;
-            margin-top: 140px; /* 为顶部工具栏和固定header留出空间 */
+            margin-top: 80px; /* 减少margin，因为现在只有一个固定头部 */
         }
         
-        .header {
-            position: fixed;
-            top: 50px; /* 在工具栏下方 */
-            left: 0;
-            right: 0;
-            background: linear-gradient(135deg, 
-                rgba(67, 97, 238, 0.95) 0%, 
-                rgba(63, 55, 201, 0.95) 50%, 
-                rgba(67, 97, 238, 0.95) 100%);
-            backdrop-filter: blur(15px);
-            border-bottom: 3px solid rgba(255, 255, 255, 0.3);
-            padding: 18px 30px;
-            z-index: 1000;
-            animation: fadeInDown 1s ease-out;
-            box-shadow: 0 4px 25px rgba(67, 97, 238, 0.2);
+        /* 当显示分析结果时，扩展容器宽度 */
+        .container.analysis-mode {
+            max-width: 1200px;
+            transition: max-width 0.5s ease;
+        }
+        
+        /* 分析模式下的布局 */
+        .container.analysis-mode .card-body {
+            display: flex;
+            gap: 2rem;
+            transition: all 0.5s ease;
+        }
+        
+        .container.analysis-mode .main-content {
+            flex: 1;
+            transform: translateX(0);
+            transition: transform 0.5s ease;
+        }
+        
+        .container.analysis-mode .analysis-results {
+            flex: 1;
+            transform: translateX(0);
+            opacity: 1;
+            transition: all 0.5s ease;
+        }
+        
+        /* 主要内容区域样式 */
+        .main-content {
+            width: 100%;
+            transition: all 0.5s ease;
+        }
+        
+        /* 分析结果区域样式 */
+        .analysis-results {
+            display: none;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s ease;
+            min-height: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 20px; /* 添加顶部边距确保不被遮挡 */
             position: relative;
-            overflow: hidden;
+            z-index: 10; /* 确保分析结果在固定头部下方但可见 */
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+        }
+        
+        .analysis-results h3 {
+            color: var(--primary-color);
+            margin-bottom: 0;
+            font-weight: 600;
+        }
+        
+        .analysis-item {
+            margin-bottom: 1.5rem;
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 10px;
+            padding: 1rem;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .analysis-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .analysis-title i {
+            color: var(--primary-color);
+        }
+        
+        /* 显示分析结果时的动画 */
+        .analysis-results.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .container.analysis-mode {
+                max-width: 95%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin-top: 90px; /* 移动端调整 */
+            }
+            
+            .toolbar-title h1 {
+                font-size: 1.1rem; /* 移动端标题更小 */
+            }
+            
+            .container.analysis-mode {
+                max-width: 100%;
+                padding: 0 10px;
+            }
+            
+            .container.analysis-mode .card-body {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .container.analysis-mode .analysis-results {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            
+            .analysis-results.show {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            
+            /* 移动端时主内容区域向上移动一点 */
+            .container.analysis-mode .main-content {
+                transform: translateY(-10px);
+            }
+        }
+        
+        /* 简化的动态背景效果 */
+        
+        /* 深色主题下的分析结果样式 */
+        [data-theme="dark"] .analysis-results {
+            background: linear-gradient(145deg, #1f2937, #111827);
+            border-left-color: var(--primary-color);
+        }
+
+        [data-theme="dark"] .analysis-item {
+            background: rgba(31, 41, 55, 0.7);
+            border-bottom-color: #374151;
+        }
+
+        [data-theme="dark"] .analysis-table {
+            background: #1f2937;
+            border-color: #374151;
+        }
+
+        [data-theme="dark"] .analysis-table td {
+            border-color: #374151;
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .analysis-table tbody tr:hover {
+            background-color: rgba(59, 130, 246, 0.08);
+        }
+
+        [data-theme="dark"] .clause-description {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .clause-requirement {
+            color: var(--text-secondary);
         }
         
         .header::before {
@@ -319,31 +523,12 @@
             animation: headerShine 3s ease-in-out infinite;
         }
         
-        .header h1 {
-            color: white;
-            font-weight: 700;
-            margin: 0;
-            font-size: 1.8rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            position: relative;
-            z-index: 2;
-        }
-        
-        .header h1 i {
-            color: white;
-            font-size: 1.6rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        
         .card {
             border: none;
-            border-radius: 20px;
+            border-radius: 15px;
             box-shadow: var(--card-shadow);
             overflow: hidden;
-            margin-bottom: 2.5rem;
+            margin-bottom: 2rem;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -358,7 +543,7 @@
         .card-header {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
-            padding: 1.5rem 2rem;
+            padding: 1.2rem 1.5rem;
             border-bottom: none;
             position: relative;
             overflow: hidden;
@@ -384,26 +569,26 @@
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 1.3rem;
+            gap: 10px;
+            font-size: 1.1rem;
         }
         
         .card-body {
-            padding: 1.5rem;
+            padding: 1.2rem;
             background: rgba(255, 255, 255, 0.98);
-            border-radius: 20px; /* 添加完整圆角 */
+            border-radius: 15px; /* 调整圆角 */
         }
         
         .upload-area {
             border: 3px dashed #dee2e6;
-            border-radius: 20px;
-            padding: 3rem 2rem;
+            border-radius: 15px;
+            padding: 2rem 1.5rem;
             text-align: center;
             transition: all 0.4s ease;
             background: linear-gradient(145deg, #ffffff, #f8f9fa);
             position: relative;
             overflow: hidden;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
         }
         
         .upload-area::before {
@@ -432,9 +617,9 @@
         }
         
         .upload-icon {
-            font-size: 3rem;
+            font-size: 2.5rem;
             color: var(--primary-color);
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
             animation: float 3s ease-in-out infinite;
         }
         
@@ -445,43 +630,48 @@
         
         .upload-area h4 {
             color: #343a40;
-            margin-bottom: 0.8rem;
+            margin-bottom: 0.6rem;
             font-weight: 600;
-            font-size: 1.4rem;
+            font-size: 1.2rem;
         }
         
         .upload-text {
             color: #6c757d;
-            margin-bottom: 2rem;
-            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
         }
         
         /* 文件输入框样式优化 */
-        .upload-content .file-input {
+        .upload-area .file-input {
             position: absolute;
-            width: auto;
-            height: auto;
-            top: auto;
-            left: auto;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%; /* 只覆盖上半部分，避免覆盖按钮 */
             opacity: 0;
+            z-index: 1;
             cursor: pointer;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 160px;
-            height: 45px;
+        }
+        
+        /* 确保按钮在文件输入框之上且不被覆盖 */
+        .button-container {
+            position: relative;
+            z-index: 2;
+            margin-top: 20px;
+            gap: 12px;
+            pointer-events: auto; /* 确保按钮可以接收点击事件 */
         }
 
         .btn-upload {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
             border: none;
-            padding: 0.8rem 2.2rem;
+            padding: 0.7rem 1.8rem;
             border-radius: 50px;
             font-weight: 600;
             transition: all 0.4s ease;
             box-shadow: 0 6px 20px rgba(67, 97, 238, 0.3);
-            font-size: 1.1rem;
+            font-size: 1rem;
             position: relative;
             overflow: hidden;
         }
@@ -507,19 +697,19 @@
         }
 
         .btn-analyze {
-            background: linear-gradient(135deg, var(--analyze-color), #5a189a);
+            background: linear-gradient(135deg, var(--primary-color), #5a189a);
             color: white;
             border: none;
-            padding: 1rem 2.5rem;
+            padding: 0.8rem 2rem;
             border-radius: 50px;
             font-weight: 600;
-            font-size: 1.2rem;
+            font-size: 1rem;
             transition: all 0.4s ease;
             box-shadow: 0 6px 20px rgba(114, 9, 183, 0.3);
             display: inline-flex;
             align-items: center;
-            gap: 12px;
-            margin: 8px;
+            gap: 10px;
+            margin: 6px;
             position: relative;
             overflow: hidden;
         }
@@ -555,16 +745,16 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-top: 25px;
-            gap: 15px;
+            margin-top: 20px;
+            gap: 12px;
         }
         
         .file-info {
             display: none;
-            padding: 2rem;
-            border-radius: 16px;
+            padding: 1.5rem;
+            border-radius: 12px;
             background: linear-gradient(145deg, #ffffff, #f8f9fa);
-            margin-top: 2rem;
+            margin-top: 1.5rem;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             border-left: 5px solid var(--primary-color);
             animation: fadeIn 0.6s ease;
@@ -573,18 +763,18 @@
         
         .analysis-results {
             display: none;
-            padding: 2rem;
-            border-radius: 16px;
+            padding: 1.5rem;
+            border-radius: 12px;
             background: linear-gradient(145deg, var(--light-bg), #ffffff);
-            margin-top: 2rem;
-            border-left: 5px solid var(--analyze-color);
+            margin-top: 1.5rem;
+            border-left: 5px solid var(--primary-color);
             animation: fadeIn 0.8s ease;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         }
 
         .file-icon {
-            font-size: 2.5rem;
-            margin-right: 20px;
+            font-size: 2rem;
+            margin-right: 15px;
         }
         
         .file-details {
@@ -593,23 +783,23 @@
         
         .file-name {
             font-weight: 600;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.3rem;
             color: #343a40;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
         
         .file-meta {
             color: #6c757d;
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
         .analysis-item {
-            margin-bottom: 2rem;
-            padding-bottom: 2rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
             border-bottom: 2px solid #e9ecef;
             background: rgba(255, 255, 255, 0.7);
-            padding: 1.5rem;
-            border-radius: 12px;
+            padding: 1.2rem;
+            border-radius: 10px;
             margin-bottom: 1.5rem;
         }
         
@@ -619,14 +809,112 @@
             padding-bottom: 1.5rem;
         }
         
+        /* 确保重点废标条款不被遮挡的特殊样式 */
+        .analysis-item:first-child {
+            margin-top: 30px; /* 确保第一个分析项有足够的顶部空间 */
+            scroll-margin-top: 150px; /* 当滚动到此元素时保持顶部空间 */
+        }
+        
         .analysis-title {
             font-weight: 600;
-            color: var(--analyze-color);
+            color: var(--primary-color);
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: 12px;
             font-size: 1.2rem;
+        }
+        
+        /* 分析结果表格样式 */
+        .analysis-table {
+            margin-bottom: 0;
+            font-size: 0.85rem;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            background: white;
+        }
+        
+        /* 当容器处于分析模式时，调整表格样式 */
+        .container.analysis-mode .analysis-table {
+            font-size: 0.9rem;
+        }
+        
+        .container.analysis-mode .analysis-table th {
+            padding: 1rem 0.8rem;
+            font-size: 0.9rem;
+        }
+        
+        .container.analysis-mode .analysis-table td {
+            padding: 0.8rem 0.7rem;
+            font-size: 0.85rem;
+        }
+        
+        .analysis-table thead {
+            border-bottom: 3px solid var(--border-color);
+        }
+        
+        .analysis-table th {
+            background: linear-gradient(145deg, var(--light-bg), #ffffff);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            font-weight: 600;
+            padding: 0.8rem 0.6rem;
+            font-size: 0.85rem;
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .analysis-table td {
+            padding: 0.6rem 0.5rem;
+            vertical-align: middle;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+        
+        .analysis-table tbody tr:hover {
+            background-color: rgba(37, 99, 235, 0.04);
+            transform: translateY(-1px);
+            transition: all 0.2s ease;
+        }
+        
+        .clause-category {
+            padding: 0.2rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            display: inline-block;
+            white-space: nowrap;
+            text-align: center;
+            min-width: 60px;
+        }
+        
+        .clause-description {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.2rem;
+            line-height: 1.3;
+        }
+        
+        .clause-requirement {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            line-height: 1.3;
+            font-style: italic;
+        }
+        
+        .severity-badge {
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-align: center;
+            min-width: 50px;
+            display: inline-block;
         }
         
         .progress-container {
@@ -844,6 +1132,14 @@
             padding: 8px 16px;
         }
         
+        .badge-text {
+            background: linear-gradient(135deg, #16a085, #10b981);
+            color: white;
+            font-weight: 500;
+            border-radius: 20px;
+            padding: 8px 16px;
+        }
+        
         .supported-formats {
             display: flex;
             gap: 15px;
@@ -933,20 +1229,28 @@
         }
         
         @media (max-width: 576px) {
+            .container {
+                margin-top: 95px; /* 小屏幕设备调整 */
+            }
+            
+            .toolbar-title h1 {
+                font-size: 1rem; /* 小屏幕标题更小 */
+                gap: 6px;
+            }
+            
             .card-body {
                 padding: 2rem;
             }
             
-            .header h1 {
-                font-size: 1.4rem;
+            /* 移动端工具栏布局优化 */
+            .top-toolbar {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px 15px;
             }
             
-            .header {
-                padding: 12px 20px;
-            }
-            
-            .header h1 i {
-                font-size: 1.2rem;
+            .toolbar-actions {
+                gap: 10px;
             }
             
             .upload-area {
@@ -1052,128 +1356,125 @@
     </style>
 </head>
 <body>
-    <!-- 顶部工具栏 -->
+    <!-- 顶部工具栏（含标题） -->
     <div class="top-toolbar">
-        <div class="theme-panel">
-            <button class="toolbar-button" id="themeToggle">
-                <i class="bi bi-palette"></i> 主题
-            </button>
-            <div class="theme-dropdown" id="themeDropdown">
-                <div class="theme-dropdown-title">
-                    <i class="bi bi-palette"></i> 选择主题
-                </div>
-                <div class="theme-grid">
-                    <div class="theme-item active" data-theme="default">
-                        <div class="theme-color-preview color-blue"></div>
-                        <div class="theme-name">默认蓝色</div>
-                    </div>
-                    <div class="theme-item" data-theme="purple">
-                        <div class="theme-color-preview color-purple"></div>
-                        <div class="theme-name">高贵紫色</div>
-                    </div>
-                    <div class="theme-item" data-theme="green">
-                        <div class="theme-color-preview color-green"></div>
-                        <div class="theme-name">自然绿色</div>
-                    </div>
-                    <div class="theme-item" data-theme="orange">
-                        <div class="theme-color-preview color-orange"></div>
-                        <div class="theme-name">活力橙色</div>
-                    </div>
-                    <div class="theme-item" data-theme="dark">
-                        <div class="theme-color-preview color-dark"></div>
-                        <div class="theme-name">深色模式</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button class="toolbar-button" id="helpBtn">
-            <i class="bi bi-question-circle"></i> 使用指南
-        </button>
-    </div>
-
-    <div class="container">
-        <div class="header">
+        <!-- 左侧标题 -->
+        <div class="toolbar-title">
             <h1><i class="bi bi-shield-check"></i> 智能投标合规检查系统</h1>
         </div>
         
+        <!-- 右侧工具按钮 -->
+        <div class="toolbar-actions">
+            <div class="theme-panel">
+                <button class="toolbar-button" id="themeToggle">
+                    <i class="bi bi-palette"></i> 主题
+                </button>
+                <div class="theme-dropdown" id="themeDropdown">
+                    <div class="theme-dropdown-title">
+                        <i class="bi bi-palette"></i> 选择主题
+                    </div>
+                    <div class="theme-grid">
+                        <div class="theme-item active" data-theme="default">
+                            <div class="theme-color-preview color-blue"></div>
+                            <div class="theme-name">默认蓝色</div>
+                        </div>
+                        <div class="theme-item" data-theme="purple">
+                            <div class="theme-color-preview color-purple"></div>
+                            <div class="theme-name">高贵紫色</div>
+                        </div>
+                        <div class="theme-item" data-theme="green">
+                            <div class="theme-color-preview color-green"></div>
+                            <div class="theme-name">自然绿色</div>
+                        </div>
+                        <div class="theme-item" data-theme="orange">
+                            <div class="theme-color-preview color-orange"></div>
+                            <div class="theme-name">活力橙色</div>
+                        </div>
+                        <div class="theme-item" data-theme="dark">
+                            <div class="theme-color-preview color-dark"></div>
+                            <div class="theme-name">深色模式</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="toolbar-button" id="helpBtn">
+                <i class="bi bi-question-circle"></i> 使用指南
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
         <div class="card">
             <div class="card-body">
-                <div class="upload-area" id="dropZone">
-                    <input type="file" id="file-input" class="file-input" accept=".doc,.docx,.pdf">
-                    <div class="upload-content">
-                        <i class="bi bi-cloud-arrow-up upload-icon"></i>
-                        <h4>拖放文件到这里</h4>
-                        <p class="upload-text">或点击"选择文件"</p>
+                <div class="main-content">
+                    <div class="upload-area" id="dropZone">
+                        <input type="file" id="file-input" class="file-input" accept=".doc,.docx,.pdf,.txt">
+                        <div class="upload-content">
+                            <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                            <h4>拖放文件到这里</h4>
+                            <p class="upload-text">或点击"选择文件"</p>
 
-                        <!-- 按钮容器 -->
-                        <div class="button-container">
-                            <button class="btn btn-upload" id="selectFileBtn">
-                                <i class="bi bi-folder2-open"></i> 选择文件
-                            </button>
-                            
-                            <!-- 新增招标文件分析按钮 -->
-                            <button class="btn btn-analyze" id="analyzeBtn" disabled>
-                                <i class="bi bi-graph-up"></i> 招标文件分析
-                            </button>
+                            <!-- 按钮容器 -->
+                            <div class="button-container">
+                                <button class="btn btn-upload" id="selectFileBtn">
+                                    <i class="bi bi-folder2-open"></i> 选择文件
+                                </button>
+                                
+                                <!-- 新增招标文件分析按钮 -->
+                                <button class="btn btn-analyze" id="analyzeBtn" disabled>
+                                    <i class="bi bi-graph-up"></i> 招标文件分析
+                                </button>
 
-                            <!-- 新增投标文件分析按钮 -->
-                            <button class="btn btn-analyze" id="analyzeBtn1" disabled>
-                                <i class="bi bi-graph-up"></i> 投标文件分析
-                            </button>
+                                <!-- 新增投标文件分析按钮 -->
+                                <button class="btn btn-analyze" id="analyzeBtn1" disabled>
+                                    <i class="bi bi-graph-up"></i> 投标文件分析
+                                </button>
+                            </div>
+
                         </div>
-
                     </div>
-                </div>
-                
-                <div class="supported-formats">
-                    <span class="badge badge-pdf p-2"><i class="bi bi-filetype-pdf"></i> PDF (.pdf)</span>
-                    <span class="badge badge-word p-2"><i class="bi bi-filetype-docx"></i> Word (.doc, .docx)</span>
-                </div>
-                
-                <div id="fileInfo" class="file-info">
-                    <div class="d-flex align-items-center">
-                        <i id="fileIcon" class="file-icon"></i>
-                        <div class="file-details">
-                            <div class="file-name" id="fileName"></div>
-                            <div class="file-meta">
-                                <span id="fileType"></span> • 
-                                <span id="fileSize"></span> • 
-                                <span id="fileStatus" class="text-success">已验证</span>
+                    
+                    <div class="supported-formats">
+                        <span class="badge badge-pdf p-2"><i class="bi bi-filetype-pdf"></i> PDF (.pdf)</span>
+                        <span class="badge badge-word p-2"><i class="bi bi-filetype-docx"></i> Word (.doc, .docx)</span>
+                        <span class="badge badge-text p-2"><i class="bi bi-filetype-txt"></i> Text (.txt)</span>
+                    </div>
+                    
+                    <div id="fileInfo" class="file-info">
+                        <div class="d-flex align-items-center">
+                            <i id="fileIcon" class="file-icon"></i>
+                            <div class="file-details">
+                                <div class="file-name" id="fileName"></div>
+                                <div class="file-meta">
+                                    <span id="fileType"></span> • 
+                                    <span id="fileSize"></span> • 
+                                    <span id="fileStatus" class="text-success">已验证</span>
+                                </div>
+                            </div>
+                            <div class="file-actions">
+                                <button id="actionBtn" class="btn btn-primary btn-action">
+                                    <i class="bi bi-eye"></i> 预览
+                                </button>
                             </div>
                         </div>
-                        <div class="file-actions">
-                            <button id="actionBtn" class="btn btn-primary btn-action">
-                                <i class="bi bi-eye"></i> 预览
-                            </button>
+                    </div>
+
+                    <!-- 分析进度条 -->
+                    <div id="progressContainer" class="progress-container" style="display: none;">
+                        <div class="progress-label">
+                            <span>分析进度</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div id="progressBar" class="progress-bar bg-success" 
+                                role="progressbar" style="width: 0%" 
+                                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 分析进度条 -->
-                <div id="progressContainer" class="progress-container" style="display: none;">
-                    <div class="progress-label">
-                        <span>分析进度</span>
-                        <span id="progressPercent">0%</span>
-                    </div>
-                    <div class="progress" style="height: 10px;">
-                        <div id="progressBar" class="progress-bar bg-success" 
-                            role="progressbar" style="width: 0%" 
-                            aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                </div>
-
-                <!-- 分析结果区域 -->
-                <div id="analysisResults" class="analysis-results">
-                    <h3><i class="bi bi-bar-chart-line"></i> 分析结果</h3>
-                
-                    <div class="analysis-item">
-                        <div class="analysis-title">
-                            <i class="bi bi-card-text"></i> 文档内容分析
-                        </div>
-                        <div id="contentAnalysis">正在分析文档内容...</div>
-                    </div>
-
-                </div>
+                <!-- 分析结果内容将在这里动态生成 -->
+                <div id="contentAnalysis" style="display: none;"></div>
 
             </div>
         </div>
@@ -1190,7 +1491,7 @@
                         <div class="step-number">1</div>
                         <div class="step-content">
                             <h5>📁 上传文档</h5>
-                            <p>点击"选择文件"或直接拖拽文件到上传区域，支持PDF和Word格式</p>
+                            <p>点击"选择文件"或直接拖拽文件到上传区域，支持PDF、Word和文本格式</p>
                         </div>
                     </div>
                     <div class="step">
@@ -1246,14 +1547,8 @@
             const progressContainer = document.getElementById('progressContainer');
             const progressBar = document.getElementById('progressBar');
             const progressPercent = document.getElementById('progressPercent');
-            const analysisResults = document.getElementById('analysisResults');
             const contentAnalysis = document.getElementById('contentAnalysis');
             
-            // 修改1: 调整文件输入框的父容器
-            const uploadContent = document.querySelector('.upload-content');
-            fileInput.parentNode.removeChild(fileInput); // 移除原位置的文件输入
-            uploadContent.appendChild(fileInput); // 将文件输入移动到按钮容器内
-
             // 当前选中的文件和文件ID
             let selectedFile = null;
             let currentFileId = null;
@@ -1263,12 +1558,14 @@
 
             // 点击选择文件按钮
             selectFileBtn.addEventListener('click', function(e) {
-                e.stopPropagation();// 阻止冒泡到文件输入
-                fileInput.click();// 手动触发文件选择
+                e.preventDefault(); // 阻止默认行为
+                e.stopPropagation(); // 阻止冒泡到文件输入
+                fileInput.click(); // 手动触发文件选择
             });
             
             // 文件选择处理
             fileInput.addEventListener('change', function(e) {
+                e.preventDefault(); // 阻止默认行为
                 if (e.target.files.length) {
                     handleFileSelection(e.target.files[0]);
                 }
@@ -1293,6 +1590,56 @@
                 }
             });
             
+            // 获取文件扩展名
+            function getFileExtension(fileName) {
+                if (!fileName) return '';
+                const lastDot = fileName.lastIndexOf('.');
+                return lastDot > -1 ? fileName.substring(lastDot).toLowerCase() : '';
+            }
+            
+            // 验证文件类型
+            function isValidFile(extension) {
+                const allowedTypes = ['.pdf', '.doc', '.docx', '.txt'];
+                return allowedTypes.includes(extension);
+            }
+            
+            // 显示文件信息
+            function displayFileInfo(file, extension) {
+                fileInfo.style.display = 'block';
+                fileName.textContent = file.name;
+                fileSize.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+                fileStatus.textContent = '已验证';
+                fileStatus.className = 'text-success';
+                
+                // 根据文件类型设置图标和类型显示
+                switch(extension) {
+                    case '.pdf':
+                        fileIcon.className = 'file-icon bi bi-filetype-pdf text-danger';
+                        fileType.textContent = 'PDF文档';
+                        break;
+                    case '.docx':
+                    case '.doc':
+                        fileIcon.className = 'file-icon bi bi-filetype-docx text-primary';
+                        fileType.textContent = 'Word文档';
+                        break;
+                    case '.txt':
+                        fileIcon.className = 'file-icon bi bi-filetype-txt text-info';
+                        fileType.textContent = '文本文件';
+                        break;
+                    default:
+                        fileIcon.className = 'file-icon bi bi-file-earmark text-secondary';
+                        fileType.textContent = '未知类型';
+                }
+                
+                actionBtn.style.display = 'block';
+            }
+            
+            // 显示成功消息
+            function showSuccess(message) {
+                console.log('成功:', message);
+                // 可以添加Toast通知或其他成功提示
+            }
+            
             // 处理选择的文件
             async function handleFileSelection(file) {
                 if (!file) return;
@@ -1302,7 +1649,7 @@
                 
                 // 验证文件类型
                 if (!isValidFile(extension)) {
-                    showError('请选择有效的Word(.doc/.docx)或PDF(.pdf)文件！');
+                    showError('请选择有效的Word(.doc/.docx)、PDF(.pdf)或文本(.txt)文件！');
                     return;
                 }
 
@@ -1349,6 +1696,7 @@
 
             // 点击招标文件分析按钮
             analyzeBtn.addEventListener('click', async function(e) {
+                e.preventDefault(); // 阻止默认行为
                 e.stopPropagation(); // 阻止事件冒泡
                 if (!selectedFile || !currentFileId) return;
                 await startTenderAnalysis();
@@ -1356,6 +1704,7 @@
 
             // 点击投标文件分析按钮
             analyzeBtn1.addEventListener('click', async function(e) {
+                e.preventDefault(); // 阻止默认行为
                 e.stopPropagation(); // 阻止事件冒泡
                 if (!selectedFile || !currentFileId) {
                     alert('请先上传文件');
@@ -1364,10 +1713,31 @@
                 // 跳转到投标文件分析页面
                 window.location.href = 'bid_analysis.html';
             });
+
+            // 测试函数 - 可以在控制台直接调用
+            window.testAnalysisLayout = function() {
+                console.log('测试分析布局动画');
+                const testData = {
+                    summary: '这是一个测试分析结果',
+                    invalid_items: [
+                        {
+                            description: '测试废标条款1',
+                            requirement: '测试要求1',
+                            severity: '高',
+                            category: '资格'
+                        }
+                    ],
+                    suggestions: ['建议1', '建议2']
+                };
+                displayTenderAnalysisResults(testData);
+            };
             
             // 获取文件扩展名
             function getFileExtension(filename) {
-                return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 1).toLowerCase();
+                // 返回带点的扩展名（如 .pdf/.doc/.docx），与校验白名单保持一致
+                const idx = filename.lastIndexOf(".");
+                if (idx === -1) return "";
+                return filename.substring(idx).toLowerCase();
             }
             
             // 根据扩展名验证文件类型
@@ -1385,7 +1755,14 @@
                 fileName.textContent = truncateFileName(file.name, 30);
                 
                 // 显示文件类型和大小
-                const fileTypeText = extension === '.pdf' ? 'PDF文档' : 'Word文档';
+                let fileTypeText;
+                if (extension === '.pdf') {
+                    fileTypeText = 'PDF文档';
+                } else if (extension === '.txt') {
+                    fileTypeText = '文本文档';
+                } else {
+                    fileTypeText = 'Word文档';
+                }
                 fileType.textContent = fileTypeText;
                 
                 const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
@@ -1394,6 +1771,8 @@
                 // 设置文件图标
                 if (extension === '.pdf') {
                     fileIcon.className = 'file-icon bi bi-file-earmark-pdf-fill text-danger';
+                } else if (extension === '.txt') {
+                    fileIcon.className = 'file-icon bi bi-file-earmark-text-fill text-success';
                 } else {
                     fileIcon.className = 'file-icon bi bi-file-earmark-word-fill text-primary';
                 }
@@ -1486,7 +1865,10 @@
                 progressContainer.style.display = 'block';
                 
                 // 隐藏之前的结果
-                analysisResults.style.display = 'none';
+                contentAnalysis.style.display = 'none';
+                
+                // 恢复容器宽度
+                document.querySelector('.container').classList.remove('analysis-mode');
                 
                 try {
                     // 调用后端分析API
@@ -1532,7 +1914,10 @@
                 progressContainer.style.display = 'block';
                 
                 // 隐藏之前的结果
-                analysisResults.style.display = 'none';
+                contentAnalysis.style.display = 'none';
+                
+                // 恢复容器宽度
+                document.querySelector('.container').classList.remove('analysis-mode');
                 
                 try {
                     // 调用后端分析API
@@ -1578,47 +1963,81 @@
 
             // 显示招标文件分析结果
             function displayTenderAnalysisResults(analysisData) {
-                // 显示分析结果区域
-                analysisResults.style.display = 'block';
+                console.log('显示招标文件分析结果');
+                
+                // 添加分析模式class，触发布局动画
+                const container = document.querySelector('.container');
+                container.classList.add('analysis-mode');
+                console.log('已添加analysis-mode类');
+                
+                // 延迟显示分析结果，让布局动画先执行
+                setTimeout(() => {
+                    // 显示分析结果区域
+                    contentAnalysis.style.display = 'block';
+                    console.log('分析结果区域已显示');
+                }, 100);
                 
                 // 更新分析结果内容
                 const summary = analysisData.summary || '分析完成';
                 const invalidItems = analysisData.invalid_items || [];
                 const suggestions = analysisData.suggestions || [];
                 
-                let resultHtml = `
-                    <div class="analysis-item">
-                        <div class="analysis-title">
-                            <i class="bi bi-card-text"></i> 分析摘要
-                        </div>
-                        <div>${summary}</div>
-                    </div>
-                `;
+                let resultHtml = ``;
                 
                 if (invalidItems.length > 0) {
                     resultHtml += `
                         <div class="analysis-item">
                             <div class="analysis-title">
-                                <i class="bi bi-exclamation-triangle-fill text-warning"></i> 废标条款
+                                <i class="bi bi-exclamation-triangle-fill text-warning"></i> 重点废标条款
                             </div>
-                            <div class="list-group">
+                            <div class="table-responsive">
+                                <table class="analysis-table table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 8%;">序号</th>
+                                            <th style="width: 15%;">类别</th>
+                                            <th style="width: 45%;">条款内容</th>
+                                            <th style="width: 22%;">要求说明</th>
+                                            <th style="width: 10%;">严重程度</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                     `;
                     
                     invalidItems.forEach((item, index) => {
                         const severityClass = getSeverityClass(item.severity);
+                        const categoryClass = getCategoryClass(item.category);
+                        
                         resultHtml += `
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">${item.category || '未分类'}</h6>
-                                    <span class="badge ${severityClass}">${item.severity || '中'}</span>
-                                </div>
-                                <p class="mb-1">${item.description || ''}</p>
-                                ${item.requirement ? `<small class="text-muted">要求: ${item.requirement}</small>` : ''}
-                            </div>
+                            <tr>
+                                <td class="text-center">${index + 1}</td>
+                                <td class="text-center">
+                                    <span class="clause-category ${categoryClass}">
+                                        ${item.category || '未分类'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="clause-description">
+                                        ${item.description || ''}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="clause-requirement">
+                                        ${item.requirement || '-'}
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="severity-badge ${severityClass}">
+                                        ${item.severity || '中'}
+                                    </span>
+                                </td>
+                            </tr>
                         `;
                     });
                     
                     resultHtml += `
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     `;
@@ -1642,8 +2061,15 @@
 
             // 显示投标文件分析结果
             function displayBidAnalysisResults(analysisData) {
-                // 显示分析结果区域
-                analysisResults.style.display = 'block';
+                // 添加分析模式class，触发布局动画
+                const container = document.querySelector('.container');
+                container.classList.add('analysis-mode');
+                
+                // 延迟显示分析结果，让布局动画先执行
+                setTimeout(() => {
+                    // 显示分析结果区域
+                    contentAnalysis.style.display = 'block';
+                }, 100);
                 
                 // 更新分析结果内容
                 const summary = analysisData.summary || '分析完成';
@@ -1651,14 +2077,7 @@
                 const issues = analysisData.issues || [];
                 const recommendations = analysisData.recommendations || [];
                 
-                let resultHtml = `
-                    <div class="analysis-item">
-                        <div class="analysis-title">
-                            <i class="bi bi-card-text"></i> 分析摘要
-                        </div>
-                        <div>${summary}</div>
-                    </div>
-                `;
+                let resultHtml = ``;
                 
                 // 合规性检查结果
                 resultHtml += `
@@ -1754,6 +2173,19 @@
                     case '中': return 'bg-warning';
                     case '高': return 'bg-danger';
                     default: return 'bg-secondary';
+                }
+            }
+
+            // 获取类别对应的样式类
+            function getCategoryClass(category) {
+                switch(category) {
+                    case '资格要求': return 'bg-primary text-white';
+                    case '技术要求': return 'bg-info text-white';
+                    case '商务要求': return 'bg-success text-white';
+                    case '格式要求': return 'bg-warning text-dark';
+                    case '时间要求': return 'bg-danger text-white';
+                    case '其他要求': return 'bg-secondary text-white';
+                    default: return 'bg-light text-dark';
                 }
             }
 

@@ -12,12 +12,17 @@ import sys
 import json
 import traceback
 
-# 添加backend路径
-backend_path = os.path.join(os.path.dirname(__file__), '..', 'backend')
-sys.path.insert(0, backend_path)
+# 添加project root path和backend路径
+project_root = os.path.dirname(os.path.dirname(__file__))
+backend_path = os.path.join(project_root, 'backend')
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+if backend_path not in sys.path:
+    sys.path.insert(0, backend_path)
 
-from file_handler import FileHandler
-from ai_agents.project_info_agent import ProjectInfoAgent
+# 现在可以正确导入
+from backend.file_handler import FileHandler
+from backend.ai_agents.project_info_agent import ProjectInfoAgent
 
 def main():
     """主函数：分析招标文件和投标文件的项目信息"""
@@ -26,8 +31,8 @@ def main():
     print("=" * 60)
     
     # 文件路径
-    tender_file = r"c:\Users\win\Desktop\BidAnalysis\test\testfile\招标文件.docx"
-    bid_file = r"c:\Users\win\Desktop\BidAnalysis\test\testfile\投标文件.docx"
+    tender_file = r"D:\BidAnalysisTool\test\testfile\招标文件.docx"
+    bid_file = r"D:\BidAnalysisTool\test\testfile\投标文件.docx"
     
     # 检查文件是否存在
     if not os.path.exists(tender_file):

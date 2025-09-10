@@ -28,12 +28,15 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import uuid
-import json
 from datetime import datetime
+from dotenv import load_dotenv
 from qwen_service import QwenAnalysisService
 from file_handler import FileHandler
 from database import DatabaseManager
 from ai_agents.agent_manager import agent_manager
+
+# 加载环境变量
+load_dotenv()
 
 # 创建Flask应用实例
 app = Flask(__name__)
@@ -52,6 +55,23 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 qwen_service = QwenAnalysisService()  # AI分析服务
 file_handler = FileHandler()          # 文件处理服务
 db_manager = DatabaseManager()        # 数据库管理服务
+
+# === 静态文件路由 ===
+@app.route('/')
+def index():
+    """
+    首页路由 - 提供前端HTML页面
+    """
+    from flask import send_from_directory
+    return send_from_directory('../frontend', 'index.html')
+
+@app.route('/frontend/<path:filename>')
+def frontend_static(filename):
+    """
+    前端静态文件服务
+    """
+    from flask import send_from_directory
+    return send_from_directory('../frontend', filename)
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():

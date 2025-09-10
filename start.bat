@@ -3,13 +3,13 @@ echo Starting BidAnalysis Tool...
 echo.
 
 :: Check if virtual environment exists
-if not exist "venv\Scripts\activate.bat" (
+if not exist ".venv\Scripts\activate.bat" (
     echo Creating virtual environment...
-    python -m venv venv
+    python -m venv .venv
 )
 
 :: Activate virtual environment
-call venv\Scripts\activate.bat
+call .venv\Scripts\activate.bat
 
 :: Install dependencies
 echo Installing dependencies...
