@@ -281,12 +281,12 @@
             max-width: 1200px;
             position: relative;
             z-index: 1;
-            margin-top: 120px; /* 为顶部工具栏和固定header留出空间 */
+            margin-top: 40px; /* 减少顶部间距，只留40px */
         }
         
         .header {
             position: fixed;
-            top: 50px; /* 在工具栏下方 */
+            top: 20px; /* 在工具栏下方 */
             left: 0;
             right: 0;
             background: linear-gradient(135deg, 
@@ -295,6 +295,7 @@
                 rgba(67, 97, 238, 0.95) 100%);
             backdrop-filter: blur(15px);
             border-bottom: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px 20px 0 0; /* 添加底部圆角效果 */
             padding: 12px 30px;
             z-index: 1000;
             animation: fadeInDown 1s ease-out;
@@ -728,6 +729,17 @@
             100% { transform: rotate(360deg); }
         }
         
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateX(100%); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+        }
+        
         .spinner {
             animation: spin 1s linear infinite;
             display: inline-block;
@@ -812,10 +824,15 @@
             border-radius: 0 0 16px 16px;
             overflow: hidden;
             border: 2px solid var(--border-color);
+            table-layout: fixed; /* 固定表格布局，提高渲染性能 */
+            width: 100%;
         }
         
         .table thead {
             border-bottom: 3px solid var(--border-color);
+            position: sticky; /* 粘性表头 */
+            top: 0;
+            z-index: 10;
         }
         
         .table th {
@@ -948,6 +965,10 @@
         .batch-actions {
             text-align: center;
             margin: 2rem 0;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap; /* 响应式换行 */
         }
         
         .btn-batch {
@@ -960,7 +981,8 @@
             font-size: 1.1rem;
             transition: all 0.4s ease;
             box-shadow: 0 6px 20px rgba(76, 201, 240, 0.3);
-            margin: 0 10px;
+            flex: 0 1 auto; /* 弹性布局 */
+            min-width: 200px; /* 最小宽度 */
         }
         
         .btn-batch:hover {
@@ -974,6 +996,21 @@
             cursor: not-allowed;
             transform: none;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 移动端批量操作按钮调整 */
+        @media (max-width: 768px) {
+            .batch-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn-batch {
+                width: 100%;
+                max-width: 300px;
+                font-size: 1rem;
+                padding: 0.8rem 1.5rem;
+            }
         }
     </style>
 </head>
@@ -1020,7 +1057,7 @@
 
     <div class="container">
         <div class="header">
-            <a href="index.html" class="back-button">
+            <a href="/" class="back-button">
                 <i class="bi bi-arrow-left"></i> <span>返回主页</span>
             </a>
             <h1><i class="bi bi-clipboard-check"></i> 投标文件合规性检测</h1>
@@ -1028,7 +1065,6 @@
 
         <!-- 进度指示器 -->
         <div class="progress-indicator">
-            <h4><i class="bi bi-bar-chart-line"></i> 检测进度统计</h4>
             <div class="progress-stats">
                 <div class="stat-item stat-pending">
                     <div class="stat-number" id="pendingCount">15</div>
@@ -1245,8 +1281,56 @@
 
         // 初始化页面
         function initializePage() {
+            // 读取从index页面传递的文件信息
+            const tenderFileId = sessionStorage.getItem('tenderFileId');
+            const bidFileId = sessionStorage.getItem('bidFileId');
+            const tenderFileName = sessionStorage.getItem('tenderFileName');
+            const bidFileName = sessionStorage.getItem('bidFileName');
+            
+            // 如果有文件信息，显示在页面中
+            if (tenderFileName || bidFileName) {
+                console.log('接收到文件信息:', {
+                    tenderFileId,
+                    bidFileId,
+                    tenderFileName,
+                    bidFileName
+                });
+                
+                // 可以在这里更新页面显示，比如在页面头部显示当前分析的文件
+                updateFileInfoDisplay(tenderFileName, bidFileName);
+            }
+            
             renderViolationItems();
             updateProgressStats();
+        }
+        
+        // 更新文件信息显示
+        function updateFileInfoDisplay(tenderFileName, bidFileName) {
+            // 在页面头部或适当位置显示当前分析的文件信息
+            const headerElement = document.querySelector('.header h1');
+            if (headerElement && (tenderFileName || bidFileName)) {
+                let fileInfo = '';
+                if (tenderFileName && bidFileName) {
+                    fileInfo = ` (招标文件: ${tenderFileName}, 投标文件: ${bidFileName})`;
+                } else if (tenderFileName) {
+                    fileInfo = ` (招标文件: ${tenderFileName})`;
+                } else if (bidFileName) {
+                    fileInfo = ` (投标文件: ${bidFileName})`;
+                }
+                
+                // 添加文件信息到标题中，但保持简洁
+                const originalTitle = headerElement.textContent.split(' (')[0];
+                headerElement.innerHTML = `<i class="bi bi-clipboard-check"></i> ${originalTitle}`;
+                
+                // 在标题下方添加文件信息
+                if (!document.querySelector('.file-info-display')) {
+                    const fileInfoDiv = document.createElement('div');
+                    fileInfoDiv.className = 'file-info-display';
+                    fileInfoDiv.style.cssText = 'font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;';
+                    fileInfoDiv.textContent = fileInfo.substring(2); // 去掉开头的空格和括号
+                    headerElement.parentElement.appendChild(fileInfoDiv);
+                }
+            }
         }
 
         // 渲染废标项列表
@@ -1296,14 +1380,22 @@
         function setupEventListeners() {
             // 一键检测全部
             document.getElementById('checkAllBtn').addEventListener('click', function() {
+                // 防止重复点击
+                if (this.disabled) {
+                    return;
+                }
+                
                 this.disabled = true;
                 this.innerHTML = '<i class="bi bi-hourglass spinner"></i> 检测中...';
+                
+                // 重置所有检测结果
+                window.detectionResults = {};
                 
                 // 模拟批量检测
                 violationItems.forEach((item, index) => {
                     setTimeout(() => {
                         startDetection(item.id);
-                    }, index * 1000); // 每秒检测一项
+                    }, index * 800); // 减少间隔时间，提高效率
                 });
                 
                 // 检测完成后恢复按钮
@@ -1312,11 +1404,15 @@
                     this.innerHTML = '<i class="bi bi-check-all"></i> 一键检测全部';
                     document.getElementById('exportReportBtn').disabled = false;
                     showAIResults();
-                }, violationItems.length * 1000 + 2000);
+                }, violationItems.length * 800 + 2000);
             });
 
             // 导出报告
             document.getElementById('exportReportBtn').addEventListener('click', function() {
+                // 防止重复点击
+                if (this.disabled) {
+                    return;
+                }
                 exportDetectionReport();
             });
         }
@@ -1326,11 +1422,16 @@
             const statusElement = document.getElementById(`status-${itemId}`);
             const button = document.querySelector(`[data-id="${itemId}"] .btn-check`);
             
+            // 防止重复点击
+            if (button.disabled) {
+                return;
+            }
+            
             // 更新状态为检测中
             statusElement.className = 'status-badge status-checking';
-            statusElement.innerHTML = '检测中...';
+            statusElement.innerHTML = '<i class="bi bi-hourglass spinner"></i> 检测中...';
             button.disabled = true;
-            button.innerHTML = '检测中...';
+            button.innerHTML = '<i class="bi bi-hourglass spinner"></i> 检测中...';
             
             // 模拟AI检测过程（2-3秒）
             setTimeout(() => {
@@ -1549,54 +1650,115 @@
             const results = window.detectionResults || {};
             
             if (Object.keys(results).length === 0) {
-                alert('请先完成检测再导出报告');
+                showToast('warning', '请先完成检测再导出报告');
                 return;
             }
             
-            // 生成报告内容
-            let reportContent = '投标文件合规性检测报告\n';
-            reportContent += '生成时间：' + new Date().toLocaleString() + '\n\n';
+            // 显示导出进度
+            const exportBtn = document.getElementById('exportReportBtn');
+            const originalText = exportBtn.innerHTML;
+            exportBtn.disabled = true;
+            exportBtn.innerHTML = '<i class="bi bi-hourglass spinner"></i> 生成中...';
             
-            // 统计摘要
-            let compliant = 0, violation = 0, warning = 0;
-            Object.values(results).forEach(result => {
-                switch(result.status) {
-                    case 'compliant': compliant++; break;
-                    case 'violation': violation++; break;
-                    case 'warning': warning++; break;
-                }
-            });
+            setTimeout(() => {
+                // 生成报告内容
+                let reportContent = '投标文件合规性检测报告\n';
+                reportContent += '='*50 + '\n';
+                reportContent += '生成时间：' + new Date().toLocaleString() + '\n';
+                reportContent += '检测工具：BidAnalysis Tool\n\n';
+                
+                // 统计摘要
+                let compliant = 0, violation = 0, warning = 0;
+                Object.values(results).forEach(result => {
+                    switch(result.status) {
+                        case 'compliant': compliant++; break;
+                        case 'violation': violation++; break;
+                        case 'warning': warning++; break;
+                    }
+                });
+                
+                reportContent += '检测摘要：\n';
+                reportContent += '-'*20 + '\n';
+                reportContent += `总检测项目：${Object.keys(results).length} 项\n`;
+                reportContent += `合规项目：${compliant} 项\n`;
+                reportContent += `警告项目：${warning} 项\n`;
+                reportContent += `违规项目：${violation} 项\n`;
+                reportContent += `合规率：${((compliant / Object.keys(results).length) * 100).toFixed(1)}%\n\n`;
+                
+                // 详细结果
+                reportContent += '详细检测结果：\n';
+                reportContent += '-'*20 + '\n';
+                Object.entries(results).forEach(([itemId, result], index) => {
+                    const item = violationItems.find(v => v.id === itemId);
+                    reportContent += `\n${index + 1}. ${item.title}\n`;
+                    reportContent += `   类别：${item.category}\n`;
+                    reportContent += `   状态：${result.status === 'compliant' ? '✓ 合规' : result.status === 'violation' ? '✗ 违规' : '⚠ 警告'}\n`;
+                    reportContent += `   置信度：${result.confidence}%\n`;
+                    reportContent += `   说明：${result.details.description}\n`;
+                    if (result.details.suggestions.length > 0) {
+                        reportContent += `   建议：${result.details.suggestions.join('；')}\n`;
+                    }
+                    reportContent += '\n' + '-'*40 + '\n';
+                });
+                
+                reportContent += '\n报告结束\n';
+                reportContent += '注：本报告由AI智能分析生成，仅供参考，请结合实际情况判断。';
+                
+                // 创建下载链接
+                const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `投标文件合规性检测报告_${new Date().toISOString().slice(0, 10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                // 恢复按钮状态
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = originalText;
+                
+                // 显示成功提示
+                showToast('success', '检测报告已导出到下载文件夹');
+            }, 1500); // 模拟生成时间
+        }
+
+        // 显示提示消息
+        function showToast(type, message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 9999;
+                max-width: 300px;
+                word-wrap: break-word;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                animation: slideIn 0.3s ease-out;
+            `;
             
-            reportContent += '检测摘要：\n';
-            reportContent += `总检测项目：${Object.keys(results).length}\n`;
-            reportContent += `合规项目：${compliant}\n`;
-            reportContent += `警告项目：${warning}\n`;
-            reportContent += `违规项目：${violation}\n\n`;
+            const icons = {
+                success: 'bi-check-circle',
+                warning: 'bi-exclamation-triangle',
+                error: 'bi-x-circle'
+            };
             
-            // 详细结果
-            reportContent += '详细检测结果：\n';
-            Object.entries(results).forEach(([itemId, result]) => {
-                const item = violationItems.find(v => v.id === itemId);
-                reportContent += `\n${item.title}：${result.status} (置信度：${result.confidence}%)\n`;
-                reportContent += `说明：${result.details.description}\n`;
-                if (result.details.suggestions.length > 0) {
-                    reportContent += `建议：${result.details.suggestions.join('；')}\n`;
-                }
-            });
+            const colors = {
+                success: 'linear-gradient(135deg, #10b981, #059669)',
+                warning: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                error: 'linear-gradient(135deg, #ef4444, #dc2626)'
+            };
             
-            // 创建下载链接
-            const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '投标文件合规性检测报告_' + new Date().toISOString().slice(0, 10) + '.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            toast.style.background = colors[type] || colors.success;
+            toast.innerHTML = `<i class="bi ${icons[type] || icons.success}"></i> ${message}`;
             
-            // 显示成功提示
-            alert('检测报告已导出到下载文件夹');
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), type === 'error' ? 5000 : 3000);
         }
 
         // 主题切换功能

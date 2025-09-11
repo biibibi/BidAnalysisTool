@@ -24,7 +24,7 @@ API端点：
 版本：1.0
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 import uuid
@@ -56,21 +56,44 @@ qwen_service = QwenAnalysisService()  # AI分析服务
 file_handler = FileHandler()          # 文件处理服务
 db_manager = DatabaseManager()        # 数据库管理服务
 
+# === 工具函数 ===
+def handle_api_error(e, default_message="操作失败"):
+    """统一的API错误处理函数"""
+    return jsonify({'error': str(e) if str(e) else default_message}), 500
+
+def validate_file_id(file_id, error_message="缺少文件ID"):
+    """验证文件ID参数"""
+    if not file_id:
+        return jsonify({'error': error_message}), 400
+    return None
+
+def get_file_record_or_error(file_id):
+    """获取文件记录，如果不存在返回错误响应"""
+    file_record = db_manager.get_file_record(file_id)
+    if not file_record:
+        return None, (jsonify({'error': '文件不存在'}), 404)
+    return file_record, None
+
 # === 静态文件路由 ===
 @app.route('/')
 def index():
     """
     首页路由 - 提供前端HTML页面
     """
-    from flask import send_from_directory
     return send_from_directory('../frontend', 'index.html')
+
+@app.route('/bid_analysis')
+def bid_analysis():
+    """
+    投标文件分析页面路由
+    """
+    return send_from_directory('../frontend', 'bid_analysis.html')
 
 @app.route('/frontend/<path:filename>')
 def frontend_static(filename):
     """
     前端静态文件服务
     """
-    from flask import send_from_directory
     return send_from_directory('../frontend', filename)
 
 @app.route('/api/upload', methods=['POST'])
@@ -146,7 +169,7 @@ def upload_file():
         
     except Exception as e:
         # 捕获并返回所有异常
-        return jsonify({'error': str(e)}), 500
+        return handle_api_error(e)
 
 @app.route('/api/analyze/tender', methods=['POST'])
 def analyze_tender():
@@ -208,13 +231,14 @@ def analyze_tender():
         file_id = data.get('file_id')
         
         # 验证必需参数
-        if not file_id:
-            return jsonify({'error': '缺少文件ID'}), 400
+        error_response = validate_file_id(file_id)
+        if error_response:
+            return error_response
         
         # 从数据库获取文件记录和内容
-        file_record = db_manager.get_file_record(file_id)
-        if not file_record:
-            return jsonify({'error': '文件不存在'}), 404
+        file_record, error_response = get_file_record_or_error(file_id)
+        if error_response:
+            return error_response
         
         # 使用Qwen AI分析招标文件内容
         # 提取废标条款、要求和建议
@@ -232,7 +256,7 @@ def analyze_tender():
         
     except Exception as e:
         # 捕获并返回所有异常
-        return jsonify({'error': str(e)}), 500
+        return handle_api_error(e)
 
 @app.route('/api/analyze/bid', methods=['POST'])
 def analyze_bid():
@@ -301,13 +325,14 @@ def analyze_bid():
         tender_analysis_id = data.get('tender_analysis_id')
         
         # 验证必需参数
-        if not file_id:
-            return jsonify({'error': '缺少文件ID'}), 400
+        error_response = validate_file_id(file_id)
+        if error_response:
+            return error_response
         
         # 从数据库获取投标文件记录和内容
-        file_record = db_manager.get_file_record(file_id)
-        if not file_record:
-            return jsonify({'error': '文件不存在'}), 404
+        file_record, error_response = get_file_record_or_error(file_id)
+        if error_response:
+            return error_response
         
         # 获取招标文件的分析结果（如果提供了分析ID）
         # 这将用于更精确的合规性检查
@@ -334,7 +359,7 @@ def analyze_bid():
         
     except Exception as e:
         # 捕获并返回所有异常
-        return jsonify({'error': str(e)}), 500
+        return handle_api_error(e)
 
 @app.route('/api/analysis/<analysis_id>', methods=['GET'])
 def get_analysis_result(analysis_id):
@@ -388,7 +413,7 @@ def get_analysis_result(analysis_id):
         
     except Exception as e:
         # 捕获并返回所有异常
-        return jsonify({'error': str(e)}), 500
+        return handle_api_error(e)
 
 
 @app.route('/api/health', methods=['GET'])
@@ -466,13 +491,15 @@ def extract_project_info():
         file_id = data.get('file_id')
         document_type = data.get('document_type', 'auto')
         
-        if not file_id:
-            return jsonify({'error': '缺少文件ID'}), 400
+        # 验证必需参数
+        error_response = validate_file_id(file_id)
+        if error_response:
+            return error_response
         
         # 从数据库获取文件内容
-        file_record = db_manager.get_file_record(file_id)
-        if not file_record:
-            return jsonify({'error': '文件不存在'}), 404
+        file_record, error_response = get_file_record_or_error(file_id)
+        if error_response:
+            return error_response
         
         # 使用Agent提取项目信息
         result = agent_manager.extract_project_info(
@@ -488,7 +515,7 @@ def extract_project_info():
         return jsonify(result)
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return handle_api_error(e)
 
 
 @app.route('/api/match-project-info', methods=['POST'])
@@ -543,13 +570,15 @@ def match_project_info():
         data = request.get_json()
         bid_file_id = data.get('bid_file_id')
         
-        if not bid_file_id:
-            return jsonify({'error': '缺少投标文件ID'}), 400
+        # 验证必需参数
+        error_response = validate_file_id(bid_file_id, '缺少投标文件ID')
+        if error_response:
+            return error_response
         
         # 获取投标文件内容
-        bid_file = db_manager.get_file_record(bid_file_id)
-        if not bid_file:
-            return jsonify({'error': '投标文件不存在'}), 404
+        bid_file, error_response = get_file_record_or_error(bid_file_id)
+        if error_response:
+            return error_response
         
         # 获取招标文件信息
         tender_info = data.get('tender_info')
@@ -557,19 +586,19 @@ def match_project_info():
             # 如果没有直接提供，尝试从招标文件ID获取
             tender_file_id = data.get('tender_file_id')
             if tender_file_id:
-                tender_file = db_manager.get_file_record(tender_file_id)
-                if tender_file:
-                    # 提取招标文件的项目信息
-                    tender_result = agent_manager.extract_project_info(
-                        tender_file['content'], 
-                        'tender'
-                    )
-                    if tender_result.get('success'):
-                        tender_info = tender_result['data']
-                    else:
-                        return jsonify({'error': '招标文件项目信息提取失败'}), 400
+                tender_file, tender_error = get_file_record_or_error(tender_file_id)
+                if tender_error:
+                    return tender_error
+                
+                # 提取招标文件的项目信息
+                tender_result = agent_manager.extract_project_info(
+                    tender_file['content'], 
+                    'tender'
+                )
+                if tender_result.get('success'):
+                    tender_info = tender_result['data']
                 else:
-                    return jsonify({'error': '招标文件不存在'}), 404
+                    return jsonify({'error': '招标文件项目信息提取失败'}), 400
             else:
                 return jsonify({'error': '缺少招标文件信息'}), 400
         
@@ -591,7 +620,7 @@ def match_project_info():
         return jsonify(match_result)
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return handle_api_error(e)
 
 
 @app.route('/api/agents', methods=['GET'])
@@ -633,7 +662,172 @@ def list_agents():
         })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return handle_api_error(e)
+
+
+@app.route('/api/preview/<file_id>', methods=['GET'])
+def preview_file(file_id):
+    """
+    文件预览接口
+    ============
+    
+    提供文件内容的在线预览功能。根据文件类型返回适当的预览格式。
+    
+    请求方式：GET
+    路径参数：
+        file_id: 文件ID
+    
+    响应格式：
+        成功: 返回文件内容（HTML格式用于预览）
+        失败: JSON错误信息
+    """
+    try:
+        # 验证文件ID
+        error_response = validate_file_id(file_id)
+        if error_response:
+            return error_response
+        
+        # 获取文件记录
+        file_record, error_response = get_file_record_or_error(file_id)
+        if error_response:
+            return error_response
+        
+        # 生成预览HTML
+        html_content = f"""
+        <!DOCTYPE html>
+        <html lang="zh-CN">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>文件预览 - {file_record['filename']}</title>
+            <style>
+                body {{
+                    font-family: 'Microsoft YaHei', Arial, sans-serif;
+                    line-height: 1.6;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f5f5f5;
+                }}
+                .container {{
+                    max-width: 800px;
+                    margin: 0 auto;
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }}
+                .header {{
+                    border-bottom: 2px solid #007bff;
+                    padding-bottom: 15px;
+                    margin-bottom: 25px;
+                }}
+                .filename {{
+                    color: #007bff;
+                    font-size: 1.5em;
+                    font-weight: bold;
+                    margin: 0;
+                }}
+                .meta {{
+                    color: #666;
+                    font-size: 0.9em;
+                    margin-top: 5px;
+                }}
+                .content {{
+                    background: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 5px;
+                    border-left: 4px solid #007bff;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                    max-height: 600px;
+                    overflow-y: auto;
+                }}
+                .footer {{
+                    margin-top: 25px;
+                    padding-top: 15px;
+                    border-top: 1px solid #dee2e6;
+                    color: #666;
+                    font-size: 0.85em;
+                    text-align: center;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 class="filename">{file_record['filename']}</h1>
+                    <div class="meta">
+                        上传时间: {file_record['upload_time']} | 
+                        文件大小: {file_record['file_size']} 字节
+                    </div>
+                </div>
+                <div class="content">{file_record['content']}</div>
+                <div class="footer">
+                    <p>BidAnalysis Tool - 文件预览服务</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return html_content, 200, {'Content-Type': 'text/html; charset=utf-8'}
+        
+    except Exception as e:
+        return handle_api_error(e)
+
+
+@app.route('/api/download/<file_id>', methods=['GET'])
+def download_file(file_id):
+    """
+    文件下载接口
+    ============
+    
+    提供文件下载功能，返回原始文件内容。
+    
+    请求方式：GET
+    路径参数：
+        file_id: 文件ID
+    
+    响应格式：
+        成功: 文件内容（attachment形式下载）
+        失败: JSON错误信息
+    """
+    try:
+        # 验证文件ID
+        error_response = validate_file_id(file_id)
+        if error_response:
+            return error_response
+        
+        # 获取文件记录
+        file_record, error_response = get_file_record_or_error(file_id)
+        if error_response:
+            return error_response
+        
+        # 确定文件类型
+        filename = file_record['filename']
+        if filename.lower().endswith('.pdf'):
+            mimetype = 'application/pdf'
+        elif filename.lower().endswith(('.doc', '.docx')):
+            mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        elif filename.lower().endswith('.txt'):
+            mimetype = 'text/plain'
+        else:
+            mimetype = 'application/octet-stream'
+        
+        # 创建响应
+        response = app.response_class(
+            file_record['content'],
+            mimetype=mimetype,
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"',
+                'Content-Length': str(len(file_record['content']))
+            }
+        )
+        
+        return response
+        
+    except Exception as e:
+        return handle_api_error(e)
 
 
 # === 应用启动配置 ===

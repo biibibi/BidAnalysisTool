@@ -397,6 +397,28 @@
             z-index: 10; /* 确保分析结果在固定头部下方但可见 */
             box-shadow: var(--card-shadow);
             border: 1px solid var(--border-color);
+            /* 优化滚动条样式 */
+            overflow-y: auto;
+            max-height: 70vh; /* 限制最大高度，避免内容过长 */
+        }
+
+        /* 自定义滚动条样式 */
+        .analysis-results::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .analysis-results::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        .analysis-results::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        .analysis-results::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
         }
         
         .analysis-results h3 {
@@ -647,7 +669,7 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 50%; /* 只覆盖上半部分，避免覆盖按钮 */
+            height: 40%; /* 减少覆盖范围，避免覆盖按钮 */
             opacity: 0;
             z-index: 1;
             cursor: pointer;
@@ -656,7 +678,7 @@
         /* 确保按钮在文件输入框之上且不被覆盖 */
         .button-container {
             position: relative;
-            z-index: 2;
+            z-index: 10; /* 增加z-index确保按钮可点击 */
             margin-top: 20px;
             gap: 12px;
             pointer-events: auto; /* 确保按钮可以接收点击事件 */
@@ -746,9 +768,126 @@
             flex-direction: column;
             align-items: center;
             margin-top: 20px;
-            gap: 12px;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
+        .button-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            width: 100%;
+        }
+        
+        .button-row .btn {
+            flex: 1;
+            min-width: 0;
+            font-size: 0.9rem;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* 响应式设计 - 小屏幕时堆叠显示 */
+        @media (max-width: 480px) {
+            .button-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .button-row .btn {
+                width: 100%;
+                font-size: 0.85rem;
+                padding: 0.7rem 0.8rem;
+            }
+        }
+        
+        /* 双文件预览区域样式 */
+        .dual-preview-area {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            border-radius: 12px;
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--primary-color);
+            border: 1px solid rgba(67, 97, 238, 0.1);
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .btn-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.2rem 1rem;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-height: 100px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-preview i {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-preview span {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .file-name-short {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .btn-preview:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-preview.btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            color: white;
+        }
+
+        .btn-preview.btn-success {
+            background: linear-gradient(135deg, var(--success-color), #22c55e);
+            color: white;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 576px) {
+            .preview-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .btn-preview {
+                min-height: 80px;
+                padding: 1rem 0.8rem;
+            }
+        }
+
         .file-info {
             display: none;
             padding: 1.5rem;
@@ -811,7 +950,7 @@
         
         /* 确保重点废标条款不被遮挡的特殊样式 */
         .analysis-item:first-child {
-            margin-top: 30px; /* 确保第一个分析项有足够的顶部空间 */
+            margin-top: 0; /* 与左侧窗体平齐，移除多余的顶部空间 */
             scroll-margin-top: 150px; /* 当滚动到此元素时保持顶部空间 */
         }
         
@@ -833,6 +972,8 @@
             overflow: hidden;
             border: 2px solid var(--border-color);
             background: white;
+            table-layout: fixed; /* 固定表格布局 */
+            width: 100%;
         }
         
         /* 当容器处于分析模式时，调整表格样式 */
@@ -1179,6 +1320,17 @@
             }
         }
         
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateX(100%); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+        }
+        
         /* 帮助提示样式 */
         .help-tips {
             background-color: #f8f9fa;
@@ -1409,26 +1561,34 @@
                 <div class="main-content">
                     <div class="upload-area" id="dropZone">
                         <input type="file" id="file-input" class="file-input" accept=".doc,.docx,.pdf,.txt">
+                        <input type="file" id="tender-file-input" class="file-input" accept=".doc,.docx,.pdf,.txt" style="display: none;">
+                        <input type="file" id="bid-file-input" class="file-input" accept=".doc,.docx,.pdf,.txt" style="display: none;">
                         <div class="upload-content">
                             <i class="bi bi-cloud-arrow-up upload-icon"></i>
                             <h4>拖放文件到这里</h4>
                             <p class="upload-text">或点击"选择文件"</p>
 
-                            <!-- 按钮容器 -->
+                            <!-- 按钮容器 - 2x2网格布局 -->
                             <div class="button-container">
-                                <button class="btn btn-upload" id="selectFileBtn">
-                                    <i class="bi bi-folder2-open"></i> 选择文件
-                                </button>
+                                <!-- 第一行：文件选择按钮 -->
+                                <div class="button-row">
+                                    <button class="btn btn-upload" id="selectTenderFileBtn">
+                                        <i class="bi bi-folder2-open"></i> 选择招标文件
+                                    </button>
+                                    <button class="btn btn-upload" id="selectBidFileBtn">
+                                        <i class="bi bi-folder2-open"></i> 选择投标文件
+                                    </button>
+                                </div>
                                 
-                                <!-- 新增招标文件分析按钮 -->
-                                <button class="btn btn-analyze" id="analyzeBtn" disabled>
-                                    <i class="bi bi-graph-up"></i> 招标文件分析
-                                </button>
-
-                                <!-- 新增投标文件分析按钮 -->
-                                <button class="btn btn-analyze" id="analyzeBtn1" disabled>
-                                    <i class="bi bi-graph-up"></i> 投标文件分析
-                                </button>
+                                <!-- 第二行：分析按钮 -->
+                                <div class="button-row">
+                                    <button class="btn btn-analyze" id="analyzeBtn" disabled>
+                                        <i class="bi bi-graph-up"></i> 招标文件分析
+                                    </button>
+                                    <button class="btn btn-analyze" id="analyzeBtn1" disabled>
+                                        <i class="bi bi-graph-up"></i> 投标文件分析
+                                    </button>
+                                </div>
                             </div>
 
                         </div>
@@ -1440,22 +1600,59 @@
                         <span class="badge badge-text p-2"><i class="bi bi-filetype-txt"></i> Text (.txt)</span>
                     </div>
                     
-                    <div id="fileInfo" class="file-info">
+                    <!-- 招标文件信息显示 -->
+                    <div id="tenderFileInfo" class="file-info" style="display: none;">
                         <div class="d-flex align-items-center">
-                            <i id="fileIcon" class="file-icon"></i>
+                            <i id="tenderFileIcon" class="file-icon"></i>
                             <div class="file-details">
-                                <div class="file-name" id="fileName"></div>
+                                <div class="file-name" id="tenderFileName"></div>
                                 <div class="file-meta">
-                                    <span id="fileType"></span> • 
-                                    <span id="fileSize"></span> • 
-                                    <span id="fileStatus" class="text-success">已验证</span>
+                                    <span id="tenderFileType"></span> • 
+                                    <span id="tenderFileSize"></span> • 
+                                    <span class="text-success">招标文件已验证</span>
                                 </div>
                             </div>
                             <div class="file-actions">
-                                <button id="actionBtn" class="btn btn-primary btn-action">
-                                    <i class="bi bi-eye"></i> 预览
+                                <button id="tenderPreviewBtn" class="btn btn-primary btn-action">
+                                    <i class="bi bi-eye"></i> 预览招标文件
                                 </button>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- 投标文件信息显示 -->
+                    <div id="bidFileInfo" class="file-info" style="display: none;">
+                        <div class="d-flex align-items-center">
+                            <i id="bidFileIcon" class="file-icon"></i>
+                            <div class="file-details">
+                                <div class="file-name" id="bidFileName"></div>
+                                <div class="file-meta">
+                                    <span id="bidFileType"></span> • 
+                                    <span id="bidFileSize"></span> • 
+                                    <span class="text-success">投标文件已验证</span>
+                                </div>
+                            </div>
+                            <div class="file-actions">
+                                <button id="bidPreviewBtn" class="btn btn-primary btn-action">
+                                    <i class="bi bi-eye"></i> 预览投标文件
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 双文件预览按钮区域 (2x1网格) -->
+                    <div id="dualPreviewArea" class="dual-preview-area" style="display: none;">
+                        <div class="preview-grid">
+                            <button id="dualTenderPreviewBtn" class="btn btn-preview btn-primary">
+                                <i class="bi bi-file-earmark-text"></i>
+                                <span>预览招标文件</span>
+                                <small id="tenderFileNameShort" class="file-name-short"></small>
+                            </button>
+                            <button id="dualBidPreviewBtn" class="btn btn-preview btn-success">
+                                <i class="bi bi-file-earmark-check"></i>
+                                <span>预览投标文件</span>
+                                <small id="bidFileNameShort" class="file-name-short"></small>
+                            </button>
                         </div>
                     </div>
 
@@ -1490,34 +1687,36 @@
                     <div class="step">
                         <div class="step-number">1</div>
                         <div class="step-content">
-                            <h5>📁 上传文档</h5>
-                            <p>点击"选择文件"或直接拖拽文件到上传区域，支持PDF、Word和文本格式</p>
+                            <h5>📁 上传招标文件</h5>
+                            <p>在上方区域上传招标文件，支持PDF、Word和文本格式</p>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">2</div>
                         <div class="step-content">
-                            <h5>🔍 智能验证</h5>
-                            <p>系统自动验证文件格式，提取文档内容进行预处理</p>
+                            <h5>� 招标文件分析</h5>
+                            <p>上传成功后，点击"招标文件分析"，AI智能提取废标条款和关键要求</p>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">3</div>
                         <div class="step-content">
-                            <h5>📋 招标分析</h5>
-                            <p>点击"招标文件分析"，AI智能提取废标条款和关键要求</p>
+                            <h5>� 上传投标文件</h5>
+                            <p>在下方区域上传投标文件，需要与招标文件配套分析</p>
                         </div>
                     </div>
                     <div class="step">
                         <div class="step-number">4</div>
                         <div class="step-content">
                             <h5>✅ 合规检查</h5>
-                            <p>上传投标文件，点击"投标文件分析"进行合规性智能检查</p>
+                            <p>同时上传招标和投标文件后，点击"投标文件分析"进行合规性智能检查</p>
                         </div>
                     </div>
                     <div class="help-tips">
                         <h6><i class="bi bi-info-circle"></i> 重要提示</h6>
                         <ul>
+                            <li>招标文件分析：仅需上传招标文件即可</li>
+                            <li>投标文件分析：需要同时上传招标文件和投标文件</li>
                             <li>分析结果仅供参考，请结合实际情况判断</li>
                             <li>建议人工复核关键条款</li>
                             <li>文件大小限制：50MB</li>
@@ -1532,15 +1731,34 @@
         document.addEventListener('DOMContentLoaded', function() {
             const dropZone = document.getElementById('dropZone');
             const fileInput = document.getElementById('file-input');
-            const fileInfo = document.getElementById('fileInfo');
-            const fileName = document.getElementById('fileName');
-            const fileType = document.getElementById('fileType');
-            const fileSize = document.getElementById('fileSize');
-            const fileIcon = document.getElementById('fileIcon');
-            const actionBtn = document.getElementById('actionBtn'); //预览内容或查看信息
-            const fileStatus = document.getElementById('fileStatus');
+            const tenderFileInput = document.getElementById('tender-file-input');
+            const bidFileInput = document.getElementById('bid-file-input');
+            
+            // 招标文件显示元素
+            const tenderFileInfo = document.getElementById('tenderFileInfo');
+            const tenderFileName = document.getElementById('tenderFileName');
+            const tenderFileType = document.getElementById('tenderFileType');
+            const tenderFileSize = document.getElementById('tenderFileSize');
+            const tenderFileIcon = document.getElementById('tenderFileIcon');
+            const tenderPreviewBtn = document.getElementById('tenderPreviewBtn');
+            
+            // 投标文件显示元素
+            const bidFileInfo = document.getElementById('bidFileInfo');
+            const bidFileName = document.getElementById('bidFileName');
+            const bidFileType = document.getElementById('bidFileType');
+            const bidFileSize = document.getElementById('bidFileSize');
+            const bidFileIcon = document.getElementById('bidFileIcon');
+            const bidPreviewBtn = document.getElementById('bidPreviewBtn');
+            
+            // 双文件预览区域
+            const dualPreviewArea = document.getElementById('dualPreviewArea');
+            const dualTenderPreviewBtn = document.getElementById('dualTenderPreviewBtn');
+            const dualBidPreviewBtn = document.getElementById('dualBidPreviewBtn');
+            const tenderFileNameShort = document.getElementById('tenderFileNameShort');
+            const bidFileNameShort = document.getElementById('bidFileNameShort');
 
-            const selectFileBtn = document.getElementById('selectFileBtn');
+            const selectTenderFileBtn = document.getElementById('selectTenderFileBtn');
+            const selectBidFileBtn = document.getElementById('selectBidFileBtn');
             const analyzeBtn = document.getElementById('analyzeBtn');
             const analyzeBtn1 = document.getElementById('analyzeBtn1');
         
@@ -1549,23 +1767,50 @@
             const progressPercent = document.getElementById('progressPercent');
             const contentAnalysis = document.getElementById('contentAnalysis');
             
-            // 当前选中的文件和文件ID
-            let selectedFile = null;
-            let currentFileId = null;
+            // 文件状态跟踪
+            let tenderFile = null;
+            let bidFile = null;
+            let tenderFileId = null;
+            let bidFileId = null;
+            let selectedFile = null; // 保持向后兼容
+            let currentFileId = null; // 保持向后兼容
 
             // API基础URL - 根据实际后端地址修改
             const API_BASE_URL = 'http://localhost:5000/api';
 
-            // 点击选择文件按钮
-            selectFileBtn.addEventListener('click', function(e) {
-                e.preventDefault(); // 阻止默认行为
-                e.stopPropagation(); // 阻止冒泡到文件输入
-                fileInput.click(); // 手动触发文件选择
+            // 点击选择招标文件按钮
+            selectTenderFileBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                tenderFileInput.click();
             });
             
-            // 文件选择处理
+            // 点击选择投标文件按钮
+            selectBidFileBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                bidFileInput.click();
+            });
+            
+            // 招标文件选择处理
+            tenderFileInput.addEventListener('change', function(e) {
+                e.preventDefault();
+                if (e.target.files.length) {
+                    handleTenderFileSelection(e.target.files[0]);
+                }
+            });
+            
+            // 投标文件选择处理
+            bidFileInput.addEventListener('change', function(e) {
+                e.preventDefault();
+                if (e.target.files.length) {
+                    handleBidFileSelection(e.target.files[0]);
+                }
+            });
+            
+            // 保持原有的文件选择处理（向后兼容）
             fileInput.addEventListener('change', function(e) {
-                e.preventDefault(); // 阻止默认行为
+                e.preventDefault();
                 if (e.target.files.length) {
                     handleFileSelection(e.target.files[0]);
                 }
@@ -1604,75 +1849,198 @@
             }
             
             // 显示文件信息
-            function displayFileInfo(file, extension) {
-                fileInfo.style.display = 'block';
-                fileName.textContent = file.name;
-                fileSize.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
-                fileStatus.textContent = '已验证';
-                fileStatus.className = 'text-success';
+            function displayFileInfo(file, extension, type) {
+                const fileSize = formatFileSize(file.size);
+                const iconClass = getFileIcon(extension);
                 
-                // 根据文件类型设置图标和类型显示
+                if (type === 'tender') {
+                    tenderFileName.textContent = file.name;
+                    tenderFileType.textContent = extension.toUpperCase();
+                    tenderFileSize.textContent = fileSize;
+                    tenderFileIcon.className = `file-icon ${iconClass}`;
+                    tenderFileInfo.style.display = 'block';
+                } else if (type === 'bid') {
+                    bidFileName.textContent = file.name;
+                    bidFileType.textContent = extension.toUpperCase();
+                    bidFileSize.textContent = fileSize;
+                    bidFileIcon.className = `file-icon ${iconClass}`;
+                    bidFileInfo.style.display = 'block';
+                }
+            }
+            
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+            }
+            
+            // 获取文件图标
+            function getFileIcon(extension) {
                 switch(extension) {
                     case '.pdf':
-                        fileIcon.className = 'file-icon bi bi-filetype-pdf text-danger';
-                        fileType.textContent = 'PDF文档';
-                        break;
+                        return 'bi bi-filetype-pdf text-danger';
                     case '.docx':
                     case '.doc':
-                        fileIcon.className = 'file-icon bi bi-filetype-docx text-primary';
-                        fileType.textContent = 'Word文档';
-                        break;
+                        return 'bi bi-filetype-docx text-primary';
                     case '.txt':
-                        fileIcon.className = 'file-icon bi bi-filetype-txt text-info';
-                        fileType.textContent = '文本文件';
-                        break;
+                        return 'bi bi-filetype-txt text-info';
                     default:
-                        fileIcon.className = 'file-icon bi bi-file-earmark text-secondary';
-                        fileType.textContent = '未知类型';
+                        return 'bi bi-file-earmark text-secondary';
                 }
-                
-                actionBtn.style.display = 'block';
             }
             
             // 显示成功消息
             function showSuccess(message) {
                 console.log('成功:', message);
-                // 可以添加Toast通知或其他成功提示
+                // 添加简单的成功提示
+                const toast = createToast('success', message);
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
             }
             
-            // 处理选择的文件
-            async function handleFileSelection(file) {
+            // 显示错误消息
+            function showError(message) {
+                console.error('错误:', message);
+                const toast = createToast('error', message);
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 5000);
+            }
+            
+            // 创建提示消息
+            function createToast(type, message) {
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    right: 20px;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    color: white;
+                    font-weight: 500;
+                    z-index: 9999;
+                    max-width: 300px;
+                    word-wrap: break-word;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    animation: slideIn 0.3s ease-out;
+                `;
+                
+                if (type === 'success') {
+                    toast.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                    toast.innerHTML = `<i class="bi bi-check-circle"></i> ${message}`;
+                } else {
+                    toast.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                    toast.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${message}`;
+                }
+                
+                return toast;
+            }
+
+            // 处理招标文件选择
+            async function handleTenderFileSelection(file) {
                 if (!file) return;
                 
-                // 获取文件扩展名
                 const extension = getFileExtension(file.name);
                 
-                // 验证文件类型
                 if (!isValidFile(extension)) {
                     showError('请选择有效的Word(.doc/.docx)、PDF(.pdf)或文本(.txt)文件！');
                     return;
                 }
 
                 try {
-                    // 上传文件到后端
                     const uploadResult = await uploadFileToServer(file);
                     
-                    // 保存文件和文件ID
-                    selectedFile = file;
-                    currentFileId = uploadResult.file_id;
+                    tenderFile = file;
+                    tenderFileId = uploadResult.file_id;
                     
-                    // 启用分析按钮
-                    analyzeBtn.disabled = false;
-                    analyzeBtn1.disabled = false;
+                    // 更新显示和按钮状态
+                    updateFileDisplay();
+                    updateButtonStates();
                     
-                    // 显示文件信息
-                    displayFileInfo(file, extension);
-                    
-                    // 显示上传成功信息
-                    showSuccess('文件上传成功！');
+                    showSuccess('招标文件上传成功！');
                     
                 } catch (error) {
-                    showError(`文件上传失败: ${error.message}`);
+                    showError(`招标文件上传失败: ${error.message}`);
+                }
+            }
+
+            // 处理投标文件选择
+            async function handleBidFileSelection(file) {
+                if (!file) return;
+                
+                const extension = getFileExtension(file.name);
+                
+                if (!isValidFile(extension)) {
+                    showError('请选择有效的Word(.doc/.docx)、PDF(.pdf)或文本(.txt)文件！');
+                    return;
+                }
+
+                try {
+                    const uploadResult = await uploadFileToServer(file);
+                    
+                    bidFile = file;
+                    bidFileId = uploadResult.file_id;
+                    
+                    // 更新显示和按钮状态
+                    updateFileDisplay();
+                    updateButtonStates();
+                    
+                    showSuccess('投标文件上传成功！');
+                    
+                } catch (error) {
+                    showError(`投标文件上传失败: ${error.message}`);
+                }
+            }
+
+            // 更新文件显示
+            function updateFileDisplay() {
+                // 隐藏所有显示区域
+                tenderFileInfo.style.display = 'none';
+                bidFileInfo.style.display = 'none';
+                dualPreviewArea.style.display = 'none';
+                
+                // 根据文件状态显示对应区域
+                if (tenderFile && bidFile) {
+                    // 两个文件都存在，显示双文件预览区域
+                    dualPreviewArea.style.display = 'block';
+                    tenderFileNameShort.textContent = truncateFileName(tenderFile.name, 15);
+                    bidFileNameShort.textContent = truncateFileName(bidFile.name, 15);
+                } else {
+                    // 显示单个文件信息
+                    if (tenderFile) {
+                        displayFileInfo(tenderFile, getFileExtension(tenderFile.name), 'tender');
+                    }
+                    if (bidFile) {
+                        displayFileInfo(bidFile, getFileExtension(bidFile.name), 'bid');
+                    }
+                }
+            }
+            
+            // 文件名截断函数
+            function truncateFileName(name, maxLength = 20) {
+                if (name.length <= maxLength) return name;
+                return name.substring(0, maxLength - 3) + '...';
+            }
+
+            // 更新按钮状态
+            function updateButtonStates() {
+                // 招标文件分析：需要招标文件
+                analyzeBtn.disabled = !tenderFile;
+                
+                // 投标文件分析：需要招标文件和投标文件
+                analyzeBtn1.disabled = !(tenderFile && bidFile);
+                
+                // 更新按钮提示
+                if (tenderFile) {
+                    analyzeBtn.title = '点击开始招标文件分析';
+                } else {
+                    analyzeBtn.title = '请先上传招标文件';
+                }
+                
+                if (tenderFile && bidFile) {
+                    analyzeBtn1.title = '点击开始投标文件分析';
+                } else if (!tenderFile) {
+                    analyzeBtn1.title = '请先上传招标文件';
+                } else {
+                    analyzeBtn1.title = '请上传投标文件';
                 }
             }
 
@@ -1694,25 +2062,151 @@
                 return await response.json();
             }
 
-            // 点击招标文件分析按钮
+            // 设置投标文件分析按钮事件监听器
+            analyzeBtn1.addEventListener('click', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!tenderFile || !bidFile || !tenderFileId || !bidFileId) {
+                    showError('请先上传招标文件和投标文件！');
+                    return;
+                }
+                
+                // 将文件信息存储到sessionStorage，供bid_analysis页面使用
+                sessionStorage.setItem('tenderFileId', tenderFileId);
+                sessionStorage.setItem('bidFileId', bidFileId);
+                sessionStorage.setItem('tenderFileName', tenderFile.name);
+                sessionStorage.setItem('bidFileName', bidFile.name);
+                
+                // 跳转到投标文件分析页面
+                window.location.href = '/bid_analysis';
+            });
+            
+            // 初始化按钮状态
+            updateButtonStates();
+            
+            // 处理招标文件选择
+            async function handleTenderFileSelection(file) {
+                if (!file) return;
+                
+                // 获取文件扩展名
+                const extension = getFileExtension(file.name);
+                
+                // 验证文件类型
+                if (!isValidFile(extension)) {
+                    showError('请选择有效的Word(.doc/.docx)、PDF(.pdf)或文本(.txt)文件！');
+                    return;
+                }
+
+                try {
+                    // 上传文件到后端
+                    const uploadResult = await uploadFileToServer(file);
+                    
+                    // 保存文件和文件ID
+                    tenderFile = file;
+                    tenderFileId = uploadResult.file_id;
+                    
+                    // 更新显示和按钮状态
+                    updateFileDisplay();
+                    updateButtonStates();
+                    
+                    // 显示上传成功信息
+                    showSuccess('招标文件上传成功！');
+                    
+                } catch (error) {
+                    showError(`招标文件上传失败: ${error.message}`);
+                }
+            }
+
+            // 上传文件到服务器
+            async function uploadFileToServer(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '上传失败');
+                }
+                
+                return await response.json();
+            }
+
+            // 设置招标文件分析按钮事件监听器
             analyzeBtn.addEventListener('click', async function(e) {
-                e.preventDefault(); // 阻止默认行为
-                e.stopPropagation(); // 阻止事件冒泡
-                if (!selectedFile || !currentFileId) return;
+                e.preventDefault();
+                e.stopPropagation();
+                if (!tenderFile || !tenderFileId) {
+                    showError('请先上传招标文件！');
+                    return;
+                }
                 await startTenderAnalysis();
             });
 
-            // 点击投标文件分析按钮
-            analyzeBtn1.addEventListener('click', async function(e) {
-                e.preventDefault(); // 阻止默认行为
-                e.stopPropagation(); // 阻止事件冒泡
-                if (!selectedFile || !currentFileId) {
-                    alert('请先上传文件');
-                    return;
+            // 预览功能事件监听器
+            // 单个招标文件预览
+            tenderPreviewBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (tenderFileId) {
+                    previewFile(tenderFileId, tenderFile.name);
                 }
-                // 跳转到投标文件分析页面
-                window.location.href = 'bid_analysis.html';
             });
+
+            // 单个投标文件预览
+            bidPreviewBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (bidFileId) {
+                    previewFile(bidFileId, bidFile.name);
+                }
+            });
+
+            // 双文件预览区域 - 招标文件预览
+            dualTenderPreviewBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (tenderFileId) {
+                    previewFile(tenderFileId, tenderFile.name);
+                }
+            });
+
+            // 双文件预览区域 - 投标文件预览
+            dualBidPreviewBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (bidFileId) {
+                    previewFile(bidFileId, bidFile.name);
+                }
+            });
+
+            // 文件预览功能
+            function previewFile(fileId, fileName) {
+                try {
+                    // 构造预览URL
+                    const previewUrl = `${API_BASE_URL}/preview/${fileId}`;
+                    
+                    // 在新窗口中打开预览
+                    const previewWindow = window.open(previewUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+                    
+                    if (!previewWindow) {
+                        // 如果弹窗被阻止，提供下载链接
+                        showError('无法打开预览窗口，可能被浏览器阻止。');
+                        const downloadUrl = `${API_BASE_URL}/download/${fileId}`;
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = fileName;
+                        link.click();
+                    } else {
+                        showSuccess(`正在预览文件: ${fileName}`);
+                    }
+                } catch (error) {
+                    showError(`预览文件失败: ${error.message}`);
+                }
+            }
 
             // 测试函数 - 可以在控制台直接调用
             window.testAnalysisLayout = function() {
@@ -1731,129 +2225,6 @@
                 };
                 displayTenderAnalysisResults(testData);
             };
-            
-            // 获取文件扩展名
-            function getFileExtension(filename) {
-                // 返回带点的扩展名（如 .pdf/.doc/.docx），与校验白名单保持一致
-                const idx = filename.lastIndexOf(".");
-                if (idx === -1) return "";
-                return filename.substring(idx).toLowerCase();
-            }
-            
-            // 根据扩展名验证文件类型
-            function isValidFile(extension) {
-                const validExtensions = ['.pdf','.doc','.docx'];
-                return validExtensions.includes(extension);
-            }
-            
-            // 显示文件信息
-            function displayFileInfo(file, extension) {
-                // 显示文件信息区域
-                fileInfo.style.display = 'block';
-                
-                // 显示文件名
-                fileName.textContent = truncateFileName(file.name, 30);
-                
-                // 显示文件类型和大小
-                let fileTypeText;
-                if (extension === '.pdf') {
-                    fileTypeText = 'PDF文档';
-                } else if (extension === '.txt') {
-                    fileTypeText = '文本文档';
-                } else {
-                    fileTypeText = 'Word文档';
-                }
-                fileType.textContent = fileTypeText;
-                
-                const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-                fileSize.textContent = `${sizeInMB} MB`;
-                
-                // 设置文件图标
-                if (extension === '.pdf') {
-                    fileIcon.className = 'file-icon bi bi-file-earmark-pdf-fill text-danger';
-                } else if (extension === '.txt') {
-                    fileIcon.className = 'file-icon bi bi-file-earmark-text-fill text-success';
-                } else {
-                    fileIcon.className = 'file-icon bi bi-file-earmark-word-fill text-primary';
-                }
-                
-                // 设置操作按钮
-                if (extension === '.pdf') {
-                    actionBtn.innerHTML = '<i class="bi bi-eye"></i> 预览';
-                    actionBtn.className = 'btn btn-primary btn-action';
-                    actionBtn.onclick = () => previewPDF(file);
-                } else {
-                    actionBtn.innerHTML = '<i class="bi bi-info-circle"></i> 信息';
-                    actionBtn.className = 'btn btn-info btn-action';
-                    actionBtn.onclick = () => showWordInfo(file);
-                }
-                
-                // 显示成功状态
-                fileStatus.textContent = '已验证';
-                fileStatus.className = 'text-success';
-            }
-            
-            // 文件名截断处理
-            function truncateFileName(name, maxLength) {
-                if (name.length <= maxLength) return name;
-                return name.substring(0, maxLength - 3) + '...';
-            }
-            
-            // PDF预览功能
-            function previewPDF(file) {
-                const fileURL = URL.createObjectURL(file);
-                window.open(fileURL, '_blank');
-            }
-            
-            // Word文件信息查看
-            function showWordInfo(file) {
-                const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-                const lastModified = new Date(file.lastModified).toLocaleString();
-                
-                alert(`Word文档信息：\n\n文件名：${file.name}\n文件大小：${sizeInMB} MB\n修改时间：${lastModified}\n\n提示：浏览器无法直接预览Word文档，请下载后查看`);
-            }
-            
-            // 文件下载功能
-            function downloadFile(file) {
-                const url = URL.createObjectURL(file);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = file.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-            
-            // 显示错误消息
-            function showError(message) {
-                fileInfo.style.display = 'block';
-                fileName.textContent = '错误';
-                fileType.textContent = '操作失败';
-                fileSize.textContent = '0 MB';
-                fileIcon.className = 'file-icon bi bi-exclamation-triangle-fill text-danger';
-                fileStatus.textContent = '错误';
-                fileStatus.className = 'text-danger';
-                
-                actionBtn.style.display = 'none';
-                
-                // 重置按钮状态
-                analyzeBtn.disabled = true;
-                analyzeBtn.innerHTML = '<i class="bi bi-graph-up"></i> 招标文件分析';
-                analyzeBtn1.disabled = true;
-                analyzeBtn1.innerHTML = '<i class="bi bi-graph-up"></i> 投标文件分析';
-                
-                // 隐藏进度条
-                progressContainer.style.display = 'none';
-                
-                // 3秒后隐藏错误信息
-                setTimeout(() => {
-                    fileInfo.style.display = 'none';
-                    actionBtn.style.display = 'block';
-                }, 3000);
-                
-                alert(message);
-            }
 
             // 开始招标文件分析
             async function startTenderAnalysis() {
@@ -1878,7 +2249,7 @@
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            file_id: currentFileId
+                            file_id: tenderFileId
                         })
                     });
                     
@@ -1899,7 +2270,7 @@
                     showError(`招标文件分析失败: ${error.message}`);
                 } finally {
                     // 重置按钮状态
-                    analyzeBtn.disabled = false;
+                    analyzeBtn.disabled = !tenderFile; // 基于文件状态重新设置
                     analyzeBtn.innerHTML = '<i class="bi bi-graph-up"></i> 招标文件分析';
                 }
             }
