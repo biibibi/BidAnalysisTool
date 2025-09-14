@@ -481,13 +481,18 @@
         }
         
         .category-format {
-            background: linear-gradient(135deg, #fff3e0, #ffcc02);
-            color: #f57c00;
+            background: linear-gradient(135deg, #faf9f7, #f5f2ed);
+            color: #8d6e63;
         }
         
         .category-time {
             background: linear-gradient(135deg, #ffebee, #ffcdd2);
             color: #d32f2f;
+        }
+        
+        .category-other {
+            background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+            color: #7b1fa2;
         }
         
         .violation-description {
@@ -847,6 +852,21 @@
             white-space: nowrap;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
+
+        /* 确保操作列不会裁剪或隐藏按钮（第6列：操作） */
+        .table td:nth-child(6) {
+            overflow: visible !important;
+            white-space: normal !important;
+        }
+
+        /* 操作按钮容器与按钮保证可见与占位 */
+        .table td:nth-child(6) .btn,
+        .table td:nth-child(6) .btn-run-check {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            visibility: visible !important;
+        }
         
         .table th:first-child {
             border-top-left-radius: 0;
@@ -894,7 +914,7 @@
             line-height: 1.3;
         }
         
-        .btn-check {
+        .btn-run-check {
             background: linear-gradient(135deg, var(--success-color), #059669);
             color: white;
             border: none;
@@ -905,17 +925,95 @@
             transition: all 0.3s ease;
             white-space: nowrap;
         }
-        
-        .btn-check:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+
+        .btn-run-check.btn-sm {
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.72rem;
         }
-        
-        .btn-check:disabled {
+
+        /* 查看结果按钮 - 蓝色主题 */
+        .btn-view-result {
+            background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+            color: white;
+            border: none;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.72rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn-view-result:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-view-result:disabled {
             background: var(--text-secondary);
             cursor: not-allowed;
             transform: none;
         }
+
+        /* 重新检测按钮 - 橙色主题，表示重置操作 */
+        .btn-recheck {
+            background: linear-gradient(135deg, var(--warning-color), #ea580c);
+            color: white;
+            border: none;
+            padding: 0.25rem 0.6rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn-recheck:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(251, 146, 60, 0.3);
+        }
+
+        .btn-recheck:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 兼容修复：Bootstrap 5 将 .btn-check 用于隐藏的切换输入，会设置裁剪/绝对定位导致不可见。
+           我们在此将其用于可见按钮，因此重置这些隐藏相关属性。*/
+        .btn.btn-run-check,
+        .btn.btn-view-result,
+        .btn.btn-recheck {
+            position: static !important;
+            clip: auto !important;
+            -webkit-clip-path: none !important;
+            clip-path: none !important;
+            width: auto !important;
+            height: auto !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            white-space: nowrap !important;
+        }
+        
+        .btn-run-check:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-run-check:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 工具类：确保元素可见且占位 */
+        .ensure-visible {
+            display: inline-flex !important;
+            visibility: visible !important;
+        }
+        
+        /* 统一操作按钮样式由 .btn-run-check 控制 */
         
         .status-badge {
             padding: 0.15rem 0.4rem;
@@ -1067,7 +1165,7 @@
         <div class="progress-indicator">
             <div class="progress-stats">
                 <div class="stat-item stat-pending">
-                    <div class="stat-number" id="pendingCount">15</div>
+                    <div class="stat-number" id="pendingCount">37</div>
                     <div class="stat-label">待检测</div>
                 </div>
                 <div class="stat-item stat-compliant">
@@ -1133,150 +1231,350 @@
     </div>
 
     <script>
-        // 常见废标项数据 - 基于实际投标要求整理
+        // 常见废标项数据 - 基于ReferenceList.xlsx自动生成（按Excel类别分类）
         const violationItems = [
             {
-                id: 'qualification_license',
-                title: '营业执照及资质证书',
+                id: 'check_0_0',
+                title: '启用投标专用章的情况说明',
                 category: '资质要求',
                 categoryClass: 'category-qualification',
-                description: '检查是否提供有效的营业执照、相关资质证书，证书是否在有效期内',
-                requirement: '必须提供营业执照复印件并加盖公章，相关行业资质证书必须在有效期内',
-                icon: 'bi-award'
-            },
-            {
-                id: 'performance_requirement',
-                title: '业绩要求',
-                category: '资质要求', 
-                categoryClass: 'category-qualification',
-                description: '检查是否满足招标文件规定的近年来类似项目业绩要求',
-                requirement: '提供近3年内类似项目业绩证明材料，包括合同复印件和客户证明',
-                icon: 'bi-graph-up'
-            },
-            {
-                id: 'technical_specs',
-                title: '技术规格响应',
-                category: '技术要求',
-                categoryClass: 'category-technical',
-                description: '检查技术方案是否完全响应招标文件的技术规格要求',
-                requirement: '技术方案必须逐条响应招标文件技术规格，不得有负偏离',
-                icon: 'bi-gear'
-            },
-            {
-                id: 'technical_standards',
-                title: '技术标准符合性',
-                category: '技术要求',
-                categoryClass: 'category-technical', 
-                description: '检查产品或服务是否符合国家、行业相关技术标准',
-                requirement: '必须符合国标、行标等相关技术标准，提供标准符合性声明',
-                icon: 'bi-clipboard-check'
-            },
-            {
-                id: 'price_format',
-                title: '报价格式',
-                category: '商务要求',
-                categoryClass: 'category-commercial',
-                description: '检查投标报价是否按照招标文件规定的格式填写',
-                requirement: '严格按照招标文件提供的报价表格式填写，不得修改表格结构',
-                icon: 'bi-currency-dollar'
-            },
-            {
-                id: 'price_calculation',
-                title: '价格计算准确性',
-                category: '商务要求',
-                categoryClass: 'category-commercial',
-                description: '检查投标报价计算是否准确，是否有计算错误',
-                requirement: '所有价格计算必须准确无误，大小写金额必须一致',
-                icon: 'bi-calculator'
-            },
-            {
-                id: 'payment_terms',
-                title: '付款条件',
-                category: '商务要求',
-                categoryClass: 'category-commercial',
-                description: '检查付款条件是否符合招标文件要求',
-                requirement: '付款条件不得偏离招标文件要求，不得增加额外付款条件',
-                icon: 'bi-credit-card'
-            },
-            {
-                id: 'delivery_period',
-                title: '交货期',
-                category: '商务要求',
-                categoryClass: 'category-commercial',
-                description: '检查承诺的交货期是否满足招标文件要求',
-                requirement: '交货期不得超过招标文件规定的最长交货期',
-                icon: 'bi-truck'
-            },
-            {
-                id: 'document_binding',
-                title: '文件装订',
-                category: '格式要求',
-                categoryClass: 'category-format',
-                description: '检查投标文件是否按要求装订，封面格式是否正确',
-                requirement: '按照招标文件要求装订，正本1份、副本若干份，封面格式统一',
-                icon: 'bi-book'
-            },
-            {
-                id: 'signature_seal',
-                title: '签名盖章',
-                category: '格式要求',
-                categoryClass: 'category-format',
-                description: '检查投标文件是否按要求签名盖章，印章是否清晰',
-                requirement: '法定代表人签字或授权代表签字，加盖企业公章，印章清晰',
+                description: '检查启用投标专用章的情况说明',
+                requirement: '如使用投标专用章，关于启用投标专用章的情况说明是否附上',
                 icon: 'bi-patch-check'
             },
             {
-                id: 'page_numbering',
-                title: '页码编制',
-                category: '格式要求',
-                categoryClass: 'category-format',
-                description: '检查投标文件页码是否连续编制，是否有遗漏',
-                requirement: '投标文件必须连续编制页码，不得有缺页、漏页现象',
-                icon: 'bi-123'
+                id: 'check_1_1',
+                title: '项目名称及编号',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查项目名称及编号',
+                requirement: '项目名称、项目编号等内容是否正确',
+                icon: 'bi-tag'
             },
             {
-                id: 'submission_deadline',
-                title: '递交时间',
-                category: '时间要求',
-                categoryClass: 'category-time',
-                description: '检查投标文件是否在规定时间内递交',
-                requirement: '必须在招标文件规定的投标截止时间前递交投标文件',
+                id: 'check_2_2',
+                title: '授权委托书',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查授权委托书',
+                requirement: '授权委托书是否附上',
+                icon: 'bi-person-check'
+            },
+            {
+                id: 'check_3_3',
+                title: '授权委托书',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查授权委托书',
+                requirement: '授权人和授权委托人的身份证号码、姓名、项目名称等内容是否正确，内容是否和招标文件要求一致',
+                icon: 'bi-person-check'
+            },
+            {
+                id: 'check_4_4',
+                title: '法定代表人身份证明',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查法定代表人身份证明',
+                requirement: '法定代表人身份证明是否附上',
+                icon: 'bi-person-badge'
+            },
+            {
+                id: 'check_5_5',
+                title: '法定代表人身份证明',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查法定代表人身份证明',
+                requirement: '法定代表人的身份证号码、姓名等内容是否正确，内容是否和招标文件要求一致',
+                icon: 'bi-person-badge'
+            },
+            {
+                id: 'check_6_6',
+                title: '投标承诺书',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查投标承诺书',
+                requirement: '投标承诺书是否附上',
+                icon: 'bi-check2-circle'
+            },
+            {
+                id: 'check_7_7',
+                title: '投标承诺书',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查投标承诺书',
+                requirement: '项目名称、项目编号等内容是否正确，内容是否和招标文件要求一致',
+                icon: 'bi-check2-circle'
+            },
+            {
+                id: 'check_8_8',
+                title: '授权委托人社保证明',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查授权委托人社保证明',
+                requirement: '授权委托人社保是否具备',
+                icon: 'bi-person-check'
+            },
+            {
+                id: 'check_9_9',
+                title: '授权委托人社保证明',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查授权委托人社保证明',
+                requirement: '社保打印日期是否有效',
+                icon: 'bi-person-check'
+            },
+            {
+                id: 'check_10_10',
+                title: '营业执照',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查营业执照',
+                requirement: '总部、省公司、绍兴营业执照是否附上',
+                icon: 'bi-award'
+            },
+            {
+                id: 'check_11_11',
+                title: '营业执照',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查营业执照',
+                requirement: '各营业执照是否在授权的有效期内',
+                icon: 'bi-award'
+            },
+            {
+                id: 'check_12_12',
+                title: '总公司授权',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查总公司授权',
+                requirement: '总公司、省公司授权函是否具备',
+                icon: 'bi-person-check'
+            },
+            {
+                id: 'check_13_13',
+                title: '总公司授权',
+                category: '资质要求',
+                categoryClass: 'category-qualification',
+                description: '检查总公司授权',
+                requirement: '各授权函是否在授权的有效期内',
+                icon: 'bi-person-check'
+            },
+            {
+                id: 'check_14_14',
+                title: '技术方案（技术偏离表）',
+                category: '技术要求',
+                categoryClass: 'category-technical',
+                description: '检查技术方案（技术偏离表）',
+                requirement: '技术偏离表是否附上',
+                icon: 'bi-box'
+            },
+            {
+                id: 'check_15_15',
+                title: '技术方案（技术偏离表）',
+                category: '技术要求',
+                categoryClass: 'category-technical',
+                description: '检查技术方案（技术偏离表）',
+                requirement: '项目名称、项目编号是否正确，表格格式是否和招标文件要求一致',
+                icon: 'bi-box'
+            },
+            {
+                id: 'check_16_16',
+                title: '投标产品规格配置清单',
+                category: '技术要求',
+                categoryClass: 'category-technical',
+                description: '检查投标产品规格配置清单',
+                requirement: '是否有要求实质性响应的项目，以及响应情况检查，是否符合实质性响应的招标要求',
+                icon: 'bi-box'
+            },
+            {
+                id: 'check_17_17',
+                title: '投标产品规格配置清单',
+                category: '技术要求',
+                categoryClass: 'category-technical',
+                description: '检查投标产品规格配置清单',
+                requirement: '投标产品规格配置清单是否具备，填写是否合理，设备数量和表格格式是否和招标文件要求一致',
+                icon: 'bi-box'
+            },
+            {
+                id: 'check_18_18',
+                title: '投标产品规格配置清单',
+                category: '技术要求',
+                categoryClass: 'category-technical',
+                description: '检查投标产品规格配置清单',
+                requirement: '是否有要求实质性响应的项目，如有该项目的具体参数和证明材料是否附上且符合',
+                icon: 'bi-box'
+            },
+            {
+                id: 'check_19_19',
+                title: '产品检测报告、彩页等',
+                category: '技术要求',
+                categoryClass: 'category-technical',
+                description: '检查产品检测报告、彩页等',
+                requirement: '是否有要求实质性响应的项目，如有该项目的检测报告是否具备',
+                icon: 'bi-box'
+            },
+            {
+                id: 'check_20_20',
+                title: '产品检测报告、彩页等',
+                category: '技术要求',
+                categoryClass: 'category-technical',
+                description: '检查产品检测报告、彩页等',
+                requirement: '核心设备的产品彩页等参数证明材料是否具备',
+                icon: 'bi-box'
+            },
+            {
+                id: 'check_21_21',
+                title: '投标响应函',
+                category: '商务要求',
+                categoryClass: 'category-commercial',
+                description: '检查投标响应函',
+                requirement: '投标响应函是否附上，内容是否和招标文件要求一致',
+                icon: 'bi-file-text'
+            },
+            {
+                id: 'check_22_22',
+                title: '投标响应函',
+                category: '商务要求',
+                categoryClass: 'category-commercial',
+                description: '检查投标响应函',
+                requirement: '招标编号、签字人信息等填写内容是否正确',
+                icon: 'bi-file-text'
+            },
+            {
+                id: 'check_23_23',
+                title: '开标一览表和分项报价表',
+                category: '商务要求',
+                categoryClass: 'category-commercial',
+                description: '检查开标一览表和分项报价表',
+                requirement: '商务报价是否超过招标上限价',
+                icon: 'bi-currency-dollar'
+            },
+            {
+                id: 'check_24_24',
+                title: '开标一览表和分项报价表',
+                category: '商务要求',
+                categoryClass: 'category-commercial',
+                description: '检查开标一览表和分项报价表',
+                requirement: '开标一览表分项金额和总价是否一致，总价大小写是否一致',
+                icon: 'bi-currency-dollar'
+            },
+            {
+                id: 'check_25_25',
+                title: '开标一览表和分项报价表',
+                category: '商务要求',
+                categoryClass: 'category-commercial',
+                description: '检查开标一览表和分项报价表',
+                requirement: '分项报价表总价是否和开标一览表一致，具体细项金额检查',
+                icon: 'bi-currency-dollar'
+            },
+            {
+                id: 'check_26_26',
+                title: '开标一览表和分项报价表',
+                category: '商务要求',
+                categoryClass: 'category-commercial',
+                description: '检查开标一览表和分项报价表',
+                requirement: '分项报价表清单内容是否和技术标中投标产品规格配置清单一致',
+                icon: 'bi-currency-dollar'
+            },
+            {
+                id: 'check_27_27',
+                title: '其他项目',
+                category: '其他要求',
+                categoryClass: 'category-format',
+                description: '检查其他项目',
+                requirement: '在招标文件中分别搜索"无效"、"废标"、"▲"、"★"等字样，与投标文件一一对照检查',
+                icon: 'bi-search'
+            },
+            {
+                id: 'check_28_28',
+                title: '其他项目',
+                category: '其他要求',
+                categoryClass: 'category-format',
+                description: '检查其他项目',
+                requirement: '在招标文件中搜索"工期"、"完工"等字样，确认工期，与投标文件一一对照检查',
                 icon: 'bi-clock'
             },
             {
-                id: 'validity_period',
-                title: '投标有效期',
-                category: '时间要求',
-                categoryClass: 'category-time',
-                description: '检查投标文件承诺的有效期是否满足要求',
-                requirement: '投标有效期不得少于招标文件规定的最短有效期',
-                icon: 'bi-calendar-check'
-            },
-            {
-                id: 'bid_bond',
-                title: '投标保证金',
-                category: '商务要求',
-                categoryClass: 'category-commercial',
-                description: '检查是否按要求提交投标保证金，金额是否正确',
-                requirement: '按招标文件要求提交投标保证金，金额准确，形式符合要求',
-                icon: 'bi-shield-check'
-            },
-            {
-                id: 'authorization_letter',
-                title: '授权委托书',
-                category: '格式要求',
+                id: 'check_29_29',
+                title: '其他项目',
+                category: '其他要求',
                 categoryClass: 'category-format',
-                description: '检查授权委托书格式是否正确，授权范围是否明确',
-                requirement: '法定代表人授权委托书格式正确，授权范围明确，印章齐全',
-                icon: 'bi-person-check'
+                description: '检查其他项目',
+                requirement: '在招标文件中搜索"质保"、"维保"、"维护"等字样，确认项目质保期及维护期等，与投标文件一一对照检查，确认无误请签字',
+                icon: 'bi-tools'
+            },
+            {
+                id: 'check_30_30',
+                title: '其他项目',
+                category: '其他要求',
+                categoryClass: 'category-format',
+                description: '检查其他项目',
+                requirement: '在招标文件中分别搜索"承诺"字样来查找需要承诺的内容，与投标文件一一对照检查',
+                icon: 'bi-check2-circle'
+            },
+            {
+                id: 'check_31_31',
+                title: '其他项目',
+                category: '其他要求',
+                categoryClass: 'category-format',
+                description: '检查其他项目',
+                requirement: '在投标文件中分别搜索"项目名称"、"项目编号"、"招标编号"、"投标单位"等字样，与招标文件中的项目名称与项目编号对照检查',
+                icon: 'bi-tag'
+            },
+            {
+                id: 'check_32_32',
+                title: '其他项目',
+                category: '其他要求',
+                categoryClass: 'category-format',
+                description: '检查其他项目',
+                requirement: '检查投标文件中的页眉及页脚，避免出现其他项目信息',
+                icon: 'bi-file-earmark'
+            },
+            {
+                id: 'check_33_33',
+                title: '其他项目',
+                category: '其他要求',
+                categoryClass: 'category-format',
+                description: '检查其他项目',
+                requirement: '在投标文件中搜索部分单位关键词，避免出现串标情况',
+                icon: 'bi-search'
+            },
+            {
+                id: 'check_34_34',
+                title: '其他项目',
+                category: '其他要求',
+                categoryClass: 'category-format',
+                description: '检查其他项目',
+                requirement: '如有环保与节能产品，节能证书是否已附 节能产品清单：http://www.ccgp.gov.cn/jnhb/jnhbqd/jnqd/',
+                icon: 'bi-leaf'
+            },
+            {
+                id: 'check_35_35',
+                title: '其他项目',
+                category: '其他要求',
+                categoryClass: 'category-format',
+                description: '检查其他项目',
+                requirement: '如低价应标是否已提供低价说明',
+                icon: 'bi-graph-down'
+            },
+            {
+                id: 'check_36_36',
+                title: '其他项目',
+                category: '其他要求',
+                categoryClass: 'category-format',
+                description: '检查其他项目',
+                requirement: '是否出现同一标的物或招标产品(服务)内的主要产品(重要组成部分)出现技术、商务描述不一致或前后描述不一致的情况',
+                icon: 'bi-search'
             }
         ];
 
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', function() {
+            // 页面初始化
             initializePage();
             setupEventListeners();
             initThemeSwitcher();
+            // 初始化完成
         });
 
         // 初始化页面
@@ -1289,14 +1587,6 @@
             
             // 如果有文件信息，显示在页面中
             if (tenderFileName || bidFileName) {
-                console.log('接收到文件信息:', {
-                    tenderFileId,
-                    bidFileId,
-                    tenderFileName,
-                    bidFileName
-                });
-                
-                // 可以在这里更新页面显示，比如在页面头部显示当前分析的文件
                 updateFileInfoDisplay(tenderFileName, bidFileName);
             }
             
@@ -1337,7 +1627,43 @@
         function renderViolationItems() {
             const violationTableBody = document.getElementById('violationTableBody');
             
+            if (!violationTableBody) {
+                console.error('❌ 找不到表格body元素！');
+                return;
+            }
+            
+            // 清空表格内容
+            violationTableBody.innerHTML = '';
+            
             violationItems.forEach((item, index) => {
+                // 为项目信息检测项生成特殊的按钮和结果显示
+                let actionButton, resultCell;
+                
+                // 检查是否是项目信息检测项（第2行，check_1_1）
+                if (item.id === 'check_1_1') {
+                    // 项目信息检测项的特殊处理
+                    actionButton = `<button class="btn btn-run-check ensure-visible" onclick="startProjectInfoDetection('${item.id}')" id="btn-${item.id}">项目信息检测</button>`;
+                    resultCell = `
+                        <div id="result-content-${item.id}">
+                            <span class="text-muted">-</span>
+                <button class="btn btn-view-result" onclick="showProjectInfoResult('${item.id}')" 
+                    id="view-result-${item.id}" style="display: none; margin-top: 5px;">
+                                <i class="bi bi-eye"></i> 查看结果
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    // 其他检测项保持原有逻辑
+                    actionButton = `
+                        <button class="btn btn-run-check" onclick="startDetection('${item.id}')">
+                            开始检测
+                        </button>
+                    `;
+                    resultCell = `
+                        <span class="text-muted">-</span>
+                    `;
+                }
+                
                 const itemHtml = `
                     <tr data-id="${item.id}">
                         <td class="serial-number">${index + 1}</td>
@@ -1363,17 +1689,17 @@
                             </span>
                         </td>
                         <td>
-                            <button class="btn btn-check" onclick="startDetection('${item.id}')">
-                                开始检测
-                            </button>
+                            ${actionButton}
                         </td>
                         <td class="result-cell" id="result-${item.id}">
-                            <span class="text-muted">-</span>
+                            ${resultCell}
                         </td>
                     </tr>
                 `;
                 violationTableBody.innerHTML += itemHtml;
             });
+            
+            // 表格渲染完成
         }
 
         // 设置事件监听器
@@ -1420,7 +1746,7 @@
         // 开始单项检测
         function startDetection(itemId) {
             const statusElement = document.getElementById(`status-${itemId}`);
-            const button = document.querySelector(`[data-id="${itemId}"] .btn-check`);
+            const button = document.querySelector(`[data-id="${itemId}"] .btn-run-check`);
             
             // 防止重复点击
             if (button.disabled) {
@@ -1498,7 +1824,7 @@
         function updateDetectionResult(itemId, result) {
             const statusElement = document.getElementById(`status-${itemId}`);
             const resultElement = document.getElementById(`result-${itemId}`);
-            const button = document.querySelector(`[data-id="${itemId}"] .btn-check`);
+            const button = document.querySelector(`[data-id="${itemId}"] .btn-run-check`);
             
             // 更新状态显示
             const statusConfig = {
@@ -1531,6 +1857,7 @@
             // 恢复按钮状态
             button.disabled = false;
             button.innerHTML = '重新检测';
+            button.className = 'btn btn-recheck ensure-visible';  // 改为橙色重新检测样式
             
             // 存储结果用于后续显示
             if (!window.detectionResults) {
@@ -1722,6 +2049,260 @@
                 // 显示成功提示
                 showToast('success', '检测报告已导出到下载文件夹');
             }, 1500); // 模拟生成时间
+        }
+
+        // 项目信息检测函数
+        async function startProjectInfoDetection(itemId) {
+            const statusElement = document.getElementById(`status-${itemId}`);
+            const button = document.getElementById(`btn-${itemId}`);
+            const resultElement = document.getElementById(`result-${itemId}`);
+            
+            // 防止重复点击
+            if (button.disabled) {
+                return;
+            }
+            
+            // 获取文件信息
+            const bidFileId = sessionStorage.getItem('bidFileId');
+            const tenderFileId = sessionStorage.getItem('tenderFileId');
+            
+            if (!bidFileId) {
+                showToast('error', '缺少投标文件信息，请返回主页重新上传文件');
+                return;
+            }
+            
+            // 更新状态为检测中
+            statusElement.className = 'status-badge status-checking';
+            statusElement.innerHTML = '<i class="bi bi-hourglass spinner"></i> 检测中...';
+            button.disabled = true;
+            button.innerHTML = '<i class="bi bi-hourglass spinner"></i> 检测中...';
+            
+            try {
+                // 调用项目信息检测API
+                const response = await fetch('/api/check-project-info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bid_file_id: bidFileId,
+                        tender_file_id: tenderFileId,
+                        check_type: 'project_info'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 存储检测结果
+                    if (!window.projectInfoResults) {
+                        window.projectInfoResults = {};
+                    }
+                    window.projectInfoResults[itemId] = result.data;
+                    
+                    // 更新状态显示
+                    updateProjectInfoResult(itemId, result.data);
+                } else {
+                    throw new Error(result.error || '检测失败');
+                }
+                
+            } catch (error) {
+                console.error('项目信息检测失败:', error);
+                
+                // 恢复状态
+                statusElement.className = 'status-badge status-pending';
+                statusElement.innerHTML = '待检测';
+                button.disabled = false;
+                button.innerHTML = '项目信息检测';
+                
+                showToast('error', '检测失败: ' + error.message);
+            }
+        }
+
+        // 更新项目信息检测结果显示
+        function updateProjectInfoResult(itemId, result) {
+            const statusElement = document.getElementById(`status-${itemId}`);
+            const button = document.getElementById(`btn-${itemId}`);
+            const resultElement = document.getElementById(`result-${itemId}`);
+            const viewButton = document.getElementById(`view-result-${itemId}`);
+            
+            // 根据检测结果更新状态
+            let statusClass, statusText;
+            
+            if (result.has_errors && result.error_count > 0) {
+                statusClass = 'status-badge status-fail';
+                statusText = '违规';
+            } else if (result.confidence && result.confidence < 0.8) {
+                statusClass = 'status-badge status-checking';
+                statusText = '警告';
+            } else {
+                statusClass = 'status-badge status-pass';
+                statusText = '合规';
+            }
+            
+            statusElement.className = statusClass;
+            statusElement.innerHTML = statusText;
+            
+            // 更新结果显示
+            resultElement.innerHTML = `
+                <div style="font-size: 0.75rem;">
+                    <div style="font-weight: 600; margin-bottom: 2px;">
+                        ${result.has_errors ? '发现问题' : '检测完成'}
+                    </div>
+                    <div style="color: #6c757d;">
+                        错误数: ${result.error_count || 0}
+                    </div>
+                </div>
+        <button class="btn btn-view-result" onclick="showProjectInfoResult('${itemId}')" 
+            id="view-result-${itemId}" style="margin-top: 5px;">
+                    <i class="bi bi-eye"></i> 查看结果
+                </button>
+            `;
+            
+            // 恢复按钮状态
+            button.disabled = false;
+            button.innerHTML = '重新检测';
+            button.className = 'btn btn-recheck ensure-visible';  // 改为橙色重新检测样式
+            
+            // 更新进度统计
+            updateProgressStats();
+        }
+
+        // 显示项目信息检测结果的浮窗
+        function showProjectInfoResult(itemId) {
+            const result = window.projectInfoResults && window.projectInfoResults[itemId];
+            
+            if (!result) {
+                showToast('warning', '未找到检测结果');
+                return;
+            }
+            
+            // 创建模态框
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                animation: fadeIn 0.3s ease;
+            `;
+            
+            // 生成错误详情HTML
+            let errorDetailsHtml = '';
+            if (result.errors && result.errors.length > 0) {
+                errorDetailsHtml = `
+                    <div style="margin-top: 20px;">
+                        <h6 style="color: #dc3545; margin-bottom: 15px;">
+                            <i class="bi bi-exclamation-triangle"></i> 发现的问题：
+                        </h6>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                `;
+                
+                result.errors.forEach((error, index) => {
+                    errorDetailsHtml += `
+                        <div style="background: #f8f9fa; border-left: 4px solid #dc3545; 
+                                   padding: 12px; margin-bottom: 10px; border-radius: 0 5px 5px 0;">
+                            <div style="font-weight: 600; color: #dc3545; margin-bottom: 5px;">
+                                问题 ${index + 1}: ${error.type === 'wrong_project_id' ? '项目编号错误' : '项目信息错误'}
+                            </div>
+                            <div style="font-size: 0.9rem; margin-bottom: 5px;">
+                                <strong>发现值：</strong> ${error.found_value}
+                            </div>
+                            <div style="font-size: 0.9rem; margin-bottom: 5px;">
+                                <strong>正确值：</strong> ${error.correct_value}
+                            </div>
+                            <div style="font-size: 0.9rem; margin-bottom: 5px;">
+                                <strong>严重程度：</strong> 
+                                <span style="color: ${error.severity === '高' ? '#dc3545' : '#ffc107'};">${error.severity}</span>
+                            </div>
+                            <div style="font-size: 0.9rem; color: #6c757d;">
+                                <strong>说明：</strong> ${error.description}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                errorDetailsHtml += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 总体状态
+            const overallStatus = result.has_errors ? 
+                '<span style="color: #dc3545;"><i class="bi bi-x-circle"></i> 不合规</span>' :
+                '<span style="color: #28a745;"><i class="bi bi-check-circle"></i> 合规</span>';
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 25px; 
+                           max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;
+                           box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; 
+                               margin-bottom: 20px; border-bottom: 2px solid #007bff; padding-bottom: 15px;">
+                        <h5 style="margin: 0; color: #007bff;">
+                            <i class="bi bi-clipboard-check"></i> 项目信息检测结果
+                        </h5>
+                        <button onclick="this.closest('.modal').remove()" 
+                                style="background: none; border: none; font-size: 1.5rem; color: #6c757d; cursor: pointer;">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong>总体状态：</strong> ${overallStatus}
+                                </div>
+                                <div style="font-size: 0.9rem; color: #6c757d;">
+                                    检测时间：${new Date().toLocaleString()}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div style="background: #e3f2fd; padding: 12px; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #1976d2; margin-bottom: 5px;">
+                                    ${result.error_count || 0}
+                                </div>
+                                <div style="font-size: 0.9rem; color: #1976d2;">发现问题</div>
+                            </div>
+                            <div style="background: #e8f5e8; padding: 12px; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #388e3c; margin-bottom: 5px;">
+                                    ${Math.round((result.confidence || 0.8) * 100)}%
+                                </div>
+                                <div style="font-size: 0.9rem; color: #388e3c;">检测置信度</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${errorDetailsHtml}
+                    
+                    <div style="margin-top: 25px; text-align: right; border-top: 1px solid #dee2e6; padding-top: 15px;">
+                        <button onclick="this.closest('.modal').remove()" 
+                                style="background: #007bff; color: white; border: none; padding: 8px 20px; 
+                                       border-radius: 6px; cursor: pointer;">
+                            关闭
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.className = 'modal';
+            document.body.appendChild(modal);
+            
+            // 点击背景关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
         }
 
         // 显示提示消息

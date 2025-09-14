@@ -449,6 +449,175 @@ def health_check():
     })
 
 
+@app.route('/api/check-project-info', methods=['POST'])
+def check_project_info():
+    """
+    项目信息检测接口
+    ================
+    
+    专门用于检测投标文件中的项目名称、项目编号等信息是否与招标文件一致。
+    这是针对"项目名称、项目编号等内容是否正确，内容是否和招标文件要求一致"检测项的专用接口。
+    
+    请求方式：POST
+    请求头：Content-Type: application/json
+    请求参数：
+        {
+            "bid_file_id": "投标文件ID",
+            "tender_file_id": "招标文件ID（可选）",
+            "check_type": "检测类型（固定为project_info）"
+        }
+    
+    响应格式：
+        成功: {
+            "success": true,
+            "data": {
+                "has_errors": true/false,
+                "error_count": 错误数量,
+                "errors": [
+                    {
+                        "type": "错误类型",
+                        "found_value": "发现的值",
+                        "correct_value": "正确的值",
+                        "location": "位置信息",
+                        "context": "上下文",
+                        "severity": "严重程度",
+                        "description": "错误描述"
+                    }
+                ],
+                "confidence": 0.95,
+                "tender_info": {
+                    "project_id": "招标项目编号",
+                    "project_name": "招标项目名称"
+                },
+                "bid_info": {
+                    "project_id": "投标项目编号",
+                    "project_name": "投标项目名称"
+                }
+            },
+            "message": "项目信息检测完成"
+        }
+        失败: {
+            "success": false,
+            "error": "错误信息"
+        }
+    
+    Returns:
+        JSON响应，包含项目信息检测结果或错误信息
+    """
+    try:
+        data = request.get_json()
+        bid_file_id = data.get('bid_file_id')
+        tender_file_id = data.get('tender_file_id')
+        check_type = data.get('check_type')
+        
+        # 验证必需参数
+        if not bid_file_id:
+            return jsonify({'success': False, 'error': '缺少投标文件ID'}), 400
+        
+        if check_type != 'project_info':
+            return jsonify({'success': False, 'error': '不支持的检测类型'}), 400
+        
+        # 获取投标文件
+        bid_file, error_response = get_file_record_or_error(bid_file_id)
+        if error_response:
+            return jsonify({'success': False, 'error': '投标文件不存在'}), 404
+        
+        # 获取招标文件信息（如果提供了招标文件ID）
+        tender_info = None
+        if tender_file_id:
+            tender_file, tender_error = get_file_record_or_error(tender_file_id)
+            if tender_error:
+                return jsonify({'success': False, 'error': '招标文件不存在'}), 404
+            
+            # 从招标文件提取项目信息
+            tender_extract_result = agent_manager.extract_project_info(
+                tender_file['content'], 
+                'tender'
+            )
+            
+            if tender_extract_result.get('success'):
+                tender_info = {
+                    'project_id': tender_extract_result['data'].get('project_id'),
+                    'project_name': tender_extract_result['data'].get('project_name')
+                }
+            else:
+                return jsonify({
+                    'success': False, 
+                    'error': '招标文件项目信息提取失败: ' + tender_extract_result.get('error', '未知错误')
+                }), 400
+        
+        # 如果没有招标文件信息，返回错误
+        if not tender_info or (not tender_info.get('project_id') and not tender_info.get('project_name')):
+            return jsonify({
+                'success': False, 
+                'error': '缺少招标文件项目信息，无法进行对比检测'
+            }), 400
+        
+        # 使用ProjectInfoAgent进行错误检测
+        context = {
+            'document_type': 'bid',
+            'tender_project_id': tender_info.get('project_id'),
+            'tender_project_name': tender_info.get('project_name')
+        }
+        
+        # 调用agent进行检测
+        result = agent_manager.process_with_agent(
+            'ProjectInfoAgent', 
+            bid_file['content'], 
+            context
+        )
+        
+        if not result.get('success'):
+            return jsonify({
+                'success': False,
+                'error': '项目信息检测失败: ' + result.get('error', '未知错误')
+            }), 500
+        
+        # 处理检测结果
+        detection_data = result['data']
+        
+        # 同时提取投标文件的项目信息用于对比显示
+        bid_extract_result = agent_manager.extract_project_info(
+            bid_file['content'], 
+            'bid'
+        )
+        
+        bid_info = {}
+        if bid_extract_result.get('success'):
+            bid_info = {
+                'project_id': bid_extract_result['data'].get('project_id'),
+                'project_name': bid_extract_result['data'].get('project_name')
+            }
+        
+        # 整合检测结果
+        response_data = {
+            'has_errors': detection_data.get('has_errors', False),
+            'error_count': detection_data.get('error_count', 0),
+            'errors': detection_data.get('errors', []),
+            'confidence': detection_data.get('confidence', 0.8),  # 使用Agent内部计算的置信度
+            'tender_info': tender_info,
+            'bid_info': bid_info,
+            'detection_details': detection_data
+        }
+        
+        # 保存检测结果到数据库
+        check_id = db_manager.save_project_info_check(
+            bid_file_id, 
+            tender_file_id, 
+            response_data
+        )
+        response_data['check_id'] = check_id
+        
+        return jsonify({
+            'success': True,
+            'data': response_data,
+            'message': '项目信息检测完成'
+        })
+        
+    except Exception as e:
+        return handle_api_error(e)
+
+
 @app.route('/api/extract-project-info', methods=['POST'])
 def extract_project_info():
     """

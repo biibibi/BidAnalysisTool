@@ -1,0 +1,195 @@
+{
+  "analysis_time": "2025-09-15T02:22:13.286825",
+  "files": {
+    "tender_file": "招标文件.docx",
+    "bid_file": "投标文件.docx"
+  },
+  "tender_analysis": {
+    "document_type": "tender",
+    "project_id": "YH2025-07032",
+    "project_name": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+    "extraction_methods": {
+      "primary": "ai_priority",
+      "ai": {
+        "project_id": "YH2025-07032",
+        "project_name": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+        "confidence": 0.95,
+        "extraction_source": "项目编号和项目名称在文档开头部分的招标公告中明确标识，分别出现在“招标编号”和“项目名称”字段中。"
+      },
+      "regex_backup": {
+        "project_id": null,
+        "project_name": null,
+        "used": false
+      }
+    },
+    "content_info": {
+      "analyzed_length": 4866,
+      "is_front_pages_only": true,
+      "estimated_pages_analyzed": 3
+    },
+    "confidence": 0.95,
+    "ai_priority_strategy": true
+  },
+  "bid_analysis": {
+    "tender_project_id": "YH2025-07032",
+    "tender_project_name": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+    "has_errors": true,
+    "error_count": 7,
+    "errors": [
+      {
+        "type": "wrong_project_id",
+        "found_value": "ZJHY-SZ2025039",
+        "correct_value": "YH2025-07032",
+        "location": "投标文件封面第1处",
+        "context": "投标文件封面显示项目编号为ZJHY-SZ2025039，与招标文件要求的YH2025-07032不一致。",
+        "severity": "高",
+        "description": "投标文件封面显示的项目编号与招标文件要求的项目编号不一致，可能导致投标被认定为无效。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_name",
+        "found_value": "嵊州市交投集团一码管砂2.0系统建设（2025）项目",
+        "correct_value": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+        "location": "投标文件封面第1处",
+        "context": "投标文件封面显示项目名称为嵊州市交投集团一码管砂2.0系统建设（2025）项目，与招标文件要求的绍兴市急救中心5G院前急救建设项目维保服务项目不一致。",
+        "severity": "高",
+        "description": "投标文件封面显示的项目名称与招标文件要求的项目名称不一致，可能导致投标被认定为无效。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_id",
+        "found_value": "ZJHY-SZ2025039",
+        "correct_value": "YH2025-07032",
+        "location": "授权委托书第2处",
+        "context": "授权委托书显示项目编号为ZJHY-SZ2025039，与招标文件要求的YH2025-07032不一致。",
+        "severity": "高",
+        "description": "授权委托书中显示的项目编号与招标文件要求的项目编号不一致，可能导致授权无效。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_name",
+        "found_value": "嵊州市交投集团一码管砂2.0系统建设（2025）项目",
+        "correct_value": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+        "location": "授权委托书第2处",
+        "context": "授权委托书显示项目名称为嵊州市交投集团一码管砂2.0系统建设（2025）项目，与招标文件要求的绍兴市急救中心5G院前急救建设项目维保服务项目不一致。",
+        "severity": "高",
+        "description": "授权委托书中显示的项目名称与招标文件要求的项目名称不一致，可能导致授权无效。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_name",
+        "found_value": "嵊州市交投集团一码管砂2.0系统建设（2025）项目",
+        "correct_value": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+        "location": "投标函第3处",
+        "context": "投标函中提及项目名称为嵊州市交投集团一码管砂2.0系统建设（2025）项目，与招标文件要求的绍兴市急救中心5G院前急救建设项目维保服务项目不一致。",
+        "severity": "高",
+        "description": "投标函中提及的项目名称与招标文件要求的项目名称不一致，可能导致投标被拒绝。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_id",
+        "found_value": "ZJHY-SZ2025039",
+        "correct_value": "YH2025-07032",
+        "location": "投标函第3处",
+        "context": "投标函中提及项目编号为ZJHY-SZ2025039，与招标文件要求的YH2025-07032不一致。",
+        "severity": "高",
+        "description": "投标函中提及的项目编号与招标文件要求的项目编号不一致，可能导致投标被拒绝。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_name",
+        "found_value": "嵊州市交投集团一码管砂2.0系统建设（2025）项目",
+        "correct_value": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+        "location": "技术方案第4处",
+        "context": "技术方案中多次提及项目名称为嵊州市交投集团一码管砂2.0系统建设（2025）项目，与招标文件要求的绍兴市急救中心5G院前急救建设项目维保服务项目不一致。",
+        "severity": "高",
+        "description": "技术方案中提及的项目名称与招标文件要求的项目名称不一致，可能导致技术方案被认定为无效或不符合要求。",
+        "confidence": 0.95
+      }
+    ],
+    "confidence": 0.32400000000000007,
+    "detection_methods": {
+      "ai_errors_count": 7,
+      "regex_errors_count": 0,
+      "merged_errors_count": 7
+    }
+  },
+  "summary": {
+    "tender_project_id": "YH2025-07032",
+    "tender_project_name": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+    "has_errors": true,
+    "error_count": 7,
+    "errors": [
+      {
+        "type": "wrong_project_id",
+        "found_value": "ZJHY-SZ2025039",
+        "correct_value": "YH2025-07032",
+        "location": "投标文件封面第1处",
+        "context": "投标文件封面显示项目编号为ZJHY-SZ2025039，与招标文件要求的YH2025-07032不一致。",
+        "severity": "高",
+        "description": "投标文件封面显示的项目编号与招标文件要求的项目编号不一致，可能导致投标被认定为无效。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_name",
+        "found_value": "嵊州市交投集团一码管砂2.0系统建设（2025）项目",
+        "correct_value": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+        "location": "投标文件封面第1处",
+        "context": "投标文件封面显示项目名称为嵊州市交投集团一码管砂2.0系统建设（2025）项目，与招标文件要求的绍兴市急救中心5G院前急救建设项目维保服务项目不一致。",
+        "severity": "高",
+        "description": "投标文件封面显示的项目名称与招标文件要求的项目名称不一致，可能导致投标被认定为无效。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_id",
+        "found_value": "ZJHY-SZ2025039",
+        "correct_value": "YH2025-07032",
+        "location": "授权委托书第2处",
+        "context": "授权委托书显示项目编号为ZJHY-SZ2025039，与招标文件要求的YH2025-07032不一致。",
+        "severity": "高",
+        "description": "授权委托书中显示的项目编号与招标文件要求的项目编号不一致，可能导致授权无效。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_name",
+        "found_value": "嵊州市交投集团一码管砂2.0系统建设（2025）项目",
+        "correct_value": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+        "location": "授权委托书第2处",
+        "context": "授权委托书显示项目名称为嵊州市交投集团一码管砂2.0系统建设（2025）项目，与招标文件要求的绍兴市急救中心5G院前急救建设项目维保服务项目不一致。",
+        "severity": "高",
+        "description": "授权委托书中显示的项目名称与招标文件要求的项目名称不一致，可能导致授权无效。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_name",
+        "found_value": "嵊州市交投集团一码管砂2.0系统建设（2025）项目",
+        "correct_value": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+        "location": "投标函第3处",
+        "context": "投标函中提及项目名称为嵊州市交投集团一码管砂2.0系统建设（2025）项目，与招标文件要求的绍兴市急救中心5G院前急救建设项目维保服务项目不一致。",
+        "severity": "高",
+        "description": "投标函中提及的项目名称与招标文件要求的项目名称不一致，可能导致投标被拒绝。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_id",
+        "found_value": "ZJHY-SZ2025039",
+        "correct_value": "YH2025-07032",
+        "location": "投标函第3处",
+        "context": "投标函中提及项目编号为ZJHY-SZ2025039，与招标文件要求的YH2025-07032不一致。",
+        "severity": "高",
+        "description": "投标函中提及的项目编号与招标文件要求的项目编号不一致，可能导致投标被拒绝。",
+        "confidence": 0.95
+      },
+      {
+        "type": "wrong_project_name",
+        "found_value": "嵊州市交投集团一码管砂2.0系统建设（2025）项目",
+        "correct_value": "绍兴市急救中心5G院前急救建设项目维保服务项目",
+        "location": "技术方案第4处",
+        "context": "技术方案中多次提及项目名称为嵊州市交投集团一码管砂2.0系统建设（2025）项目，与招标文件要求的绍兴市急救中心5G院前急救建设项目维保服务项目不一致。",
+        "severity": "高",
+        "description": "技术方案中提及的项目名称与招标文件要求的项目名称不一致，可能导致技术方案被认定为无效或不符合要求。",
+        "confidence": 0.95
+      }
+    ]
+  }
+}

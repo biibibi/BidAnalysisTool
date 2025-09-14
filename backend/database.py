@@ -205,6 +205,24 @@ class DatabaseManager:
                 )
             ''')
             
+            # 创建项目信息检测结果表
+            # 存储针对特定检测项的项目信息检测结果
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS project_info_checks (
+                    id TEXT PRIMARY KEY,              -- 检测记录唯一标识符
+                    bid_file_id TEXT NOT NULL,        -- 投标文件ID
+                    tender_file_id TEXT,              -- 招标文件ID（可选）
+                    check_type TEXT NOT NULL,         -- 检测类型(project_info)
+                    has_errors BOOLEAN DEFAULT FALSE, -- 是否有错误
+                    error_count INTEGER DEFAULT 0,    -- 错误数量
+                    confidence REAL DEFAULT 0.0,      -- 检测置信度
+                    check_result TEXT,                -- 检测详细结果(JSON格式)
+                    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 检测时间
+                    FOREIGN KEY (bid_file_id) REFERENCES files (id),   -- 外键约束
+                    FOREIGN KEY (tender_file_id) REFERENCES files (id) -- 外键约束
+                )
+            ''')
+            
             # 提交事务，确保表创建成功
             conn.commit()
     
@@ -771,3 +789,120 @@ class DatabaseManager:
             print(f"获取文件匹配记录失败: {e}")
         
         return matches
+
+    def save_project_info_check(self, bid_file_id: str, tender_file_id: Optional[str], check_result: Dict) -> str:
+        """
+        保存项目信息检测结果
+        ====================
+        
+        保存针对"项目名称、项目编号等内容是否正确"检测项的专门检测结果。
+        
+        Args:
+            bid_file_id (str): 投标文件ID
+            tender_file_id (Optional[str]): 招标文件ID（可选）
+            check_result (Dict): 检测结果
+                - has_errors: 是否有错误
+                - error_count: 错误数量
+                - confidence: 检测置信度
+                - errors: 错误详情列表
+                - tender_info: 招标文件项目信息
+                - bid_info: 投标文件项目信息
+                
+        Returns:
+            str: 检测记录ID
+        """
+        check_id = str(uuid.uuid4())
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO project_info_checks (
+                        id, bid_file_id, tender_file_id, check_type,
+                        has_errors, error_count, confidence, check_result
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    check_id,
+                    bid_file_id,
+                    tender_file_id,
+                    'project_info',
+                    check_result.get('has_errors', False),
+                    check_result.get('error_count', 0),
+                    check_result.get('confidence', 0.0),
+                    json.dumps(check_result, ensure_ascii=False)
+                ))
+                conn.commit()
+            
+            return check_id
+            
+        except Exception as e:
+            print(f"保存项目信息检测结果失败: {e}")
+            raise e
+
+    def get_project_info_check(self, check_id: str) -> Optional[Dict]:
+        """
+        获取项目信息检测结果
+        ====================
+        
+        根据检测ID获取项目信息检测结果。
+        
+        Args:
+            check_id (str): 检测记录ID
+            
+        Returns:
+            Optional[Dict]: 检测记录或None
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT * FROM project_info_checks WHERE id = ?
+                ''', (check_id,))
+                
+                row = cursor.fetchone()
+                if row:
+                    result = dict(row)
+                    result['check_result'] = json.loads(result['check_result'])
+                    return result
+                return None
+                
+        except Exception as e:
+            print(f"获取项目信息检测结果失败: {e}")
+            return None
+
+    def get_project_info_checks_by_file(self, bid_file_id: str) -> List[Dict]:
+        """
+        获取文件的所有项目信息检测记录
+        =============================
+        
+        获取指定投标文件的所有项目信息检测记录。
+        
+        Args:
+            bid_file_id (str): 投标文件ID
+            
+        Returns:
+            List[Dict]: 检测记录列表，按时间倒序排列
+        """
+        checks = []
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT * FROM project_info_checks 
+                    WHERE bid_file_id = ? 
+                    ORDER BY created_time DESC
+                ''', (bid_file_id,))
+                
+                for row in cursor.fetchall():
+                    result = dict(row)
+                    result['check_result'] = json.loads(result['check_result'])
+                    checks.append(result)
+                    
+        except Exception as e:
+            print(f"获取文件检测记录失败: {e}")
+        
+        return checks

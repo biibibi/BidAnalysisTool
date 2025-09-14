@@ -31,9 +31,9 @@ def main():
     print("=" * 60)
     
     # 文件路径
-    tender_file = r"D:\BidAnalysisTool\test\testfile\招标文件.docx"
-    bid_file = r"D:\BidAnalysisTool\test\testfile\投标文件.docx"
-    
+    tender_file = r".\testfile\招标文件.docx"
+    bid_file = r".\testfile\投标文件.docx"
+
     # 检查文件是否存在
     if not os.path.exists(tender_file):
         print(f"❌ 招标文件不存在: {tender_file}")
