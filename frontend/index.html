@@ -2071,14 +2071,7 @@
                     return;
                 }
                 
-                // 将文件信息存储到sessionStorage，供bid_analysis页面使用
-                sessionStorage.setItem('tenderFileId', tenderFileId);
-                sessionStorage.setItem('bidFileId', bidFileId);
-                sessionStorage.setItem('tenderFileName', tenderFile.name);
-                sessionStorage.setItem('bidFileName', bidFile.name);
-                
-                // 跳转到投标文件分析页面
-                window.location.href = '/bid_analysis';
+                await startBidAnalysis();
             });
             
             // 初始化按钮状态
@@ -2279,7 +2272,7 @@
             async function startBidAnalysis() {
                 // 禁用分析按钮
                 analyzeBtn1.disabled = true;
-                analyzeBtn1.innerHTML = '<i class="bi bi-hourglass spinner"></i> 分析中...';
+                analyzeBtn1.innerHTML = '<i class="bi bi-hourglass spinner"></i> 处理中...';
                 
                 // 显示进度条
                 progressContainer.style.display = 'block';
@@ -2291,45 +2284,92 @@
                 document.querySelector('.container').classList.remove('analysis-mode');
                 
                 try {
-                    // 调用后端分析API
-                    const response = await fetch(`${API_BASE_URL}/analyze/bid`, {
+                    // 步骤1: 文档预处理（目录提取和文档拆分）
+                    updateProgress(10, '开始处理投标文件...');
+                    analyzeBtn1.innerHTML = '<i class="bi bi-hourglass spinner"></i> 提取目录中...';
+                    
+                    const processResponse = await fetch(`${API_BASE_URL}/process-bid-document`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            file_id: currentFileId,
-                            tender_analysis_id: currentFileId // 可以关联之前的招标文件分析
+                            file_id: bidFileId
                         })
                     });
                     
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || '分析失败');
+                    updateProgress(30, '目录提取完成，正在拆分文档...');
+                    
+                    if (!processResponse.ok) {
+                        const processError = await processResponse.json();
+                        throw new Error(processError.error || '文档处理失败');
                     }
                     
-                    const result = await response.json();
+                    const processResult = await processResponse.json();
+                    console.log('文档处理结果:', processResult);
+                    
+                    // 步骤2: 等待文档处理状态完成
+                    updateProgress(60, '文档拆分完成，准备跳转到分析页面...');
+                    analyzeBtn1.innerHTML = '<i class="bi bi-hourglass spinner"></i> 准备分析...';
+                    
+                    // 等待一下让用户看到处理完成的消息
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    // 步骤3: 将文件信息存储到sessionStorage，供bid_analysis页面使用
+                    sessionStorage.setItem('tenderFileId', tenderFileId);
+                    sessionStorage.setItem('bidFileId', bidFileId);
+                    sessionStorage.setItem('tenderFileName', tenderFile.name);
+                    sessionStorage.setItem('bidFileName', bidFile.name);
                     
                     // 完成进度条
-                    updateProgress(100);
+                    updateProgress(100, '文档处理完成，正在跳转...');
                     
-                    // 显示分析结果
-                    displayBidAnalysisResults(result.result);
+                    // 等待进度条动画完成后跳转
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // 跳转到投标文件分析页面
+                    window.location.href = '/bid_analysis';
                     
                 } catch (error) {
-                    showError(`投标文件分析失败: ${error.message}`);
+                    showError(`文档处理失败: ${error.message}`);
+                    updateProgress(0, '处理失败');
                 } finally {
-                    // 重置按钮状态
-                    analyzeBtn1.disabled = false;
+                    // 重置按钮状态（只有在出错时才会执行到这里，正常情况下页面已经跳转了）
+                    analyzeBtn1.disabled = !(tenderFile && bidFile);
                     analyzeBtn1.innerHTML = '<i class="bi bi-graph-up"></i> 投标文件分析';
+                    
+                    // 隐藏进度条（延迟隐藏，让用户看到完成状态）
+                    setTimeout(() => {
+                        if (progressContainer) {
+                            progressContainer.style.display = 'none';
+                        }
+                    }, 2000);
                 }
             }
 
             // 更新进度条
-            function updateProgress(percent) {
+            function updateProgress(percent, message = '') {
                 progressBar.style.width = `${percent}%`;
                 progressBar.setAttribute('aria-valuenow', percent);
                 progressPercent.textContent = `${percent}%`;
+                
+                // 如果有消息，显示在进度条下方
+                if (message) {
+                    // 查找或创建消息元素
+                    let messageElement = document.getElementById('progress-message');
+                    if (!messageElement) {
+                        messageElement = document.createElement('div');
+                        messageElement.id = 'progress-message';
+                        messageElement.style.cssText = `
+                            margin-top: 8px;
+                            font-size: 0.9em;
+                            color: var(--text-secondary);
+                            text-align: center;
+                        `;
+                        progressContainer.appendChild(messageElement);
+                    }
+                    messageElement.textContent = message;
+                }
             }
 
             // 显示招标文件分析结果

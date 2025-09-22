@@ -12,12 +12,10 @@ import sys
 import os
 from typing import Dict, Any, Optional, List
 
-# 添加backend目录到路径以解决导入问题
+# 计算 backend 目录路径供后续按路径导入备用
 backend_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if backend_path not in sys.path:
-    sys.path.insert(0, backend_path)
 
-from ai_agents.base_agent import BaseAgent
+from .base_agent import BaseAgent
 
 class ProjectInfoAgent(BaseAgent):
     """
@@ -194,11 +192,14 @@ class ProjectInfoAgent(BaseAgent):
                 import importlib.util
                 qwen_path = os.path.join(backend_path, 'qwen_service.py')
                 spec = importlib.util.spec_from_file_location("qwen_service", qwen_path)
+                if spec is None or spec.loader is None:
+                    raise ImportError(f"无法加载模块规范: {qwen_path}")
                 qwen_module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(qwen_module)
                 QwenAnalysisService = qwen_module.QwenAnalysisService
-            
+
             ai_service = QwenAnalysisService()
+            provider = os.getenv("LLM_PROVIDER", "qwen")
             
             # 构建提示词
             if doc_type == "tender":
@@ -209,7 +210,12 @@ class ProjectInfoAgent(BaseAgent):
             self.logger.info(f"开始AI提取，文档类型: {doc_type}, 内容长度: {len(content)}")
             
             # 调用AI分析
-            response = ai_service._call_qwen_api(prompt)
+            # 根据全局提供方路由调用（保持提示与解析不变）
+            try:
+                response = ai_service._call_model_api(provider, prompt)
+            except AttributeError:
+                # 向后兼容：旧版本仅支持Qwen
+                response = ai_service._call_qwen_api(prompt)
             
             # 解析响应
             result = self._parse_ai_response(response)
@@ -417,8 +423,7 @@ class ProjectInfoAgent(BaseAgent):
             return {
                 "error": "缺少招标文件的项目信息",
                 "has_errors": False,
-                "errors": [],
-                "confidence": 0.0
+                "errors": []
             }
         
         self.logger.info(f"开始项目信息错误检测 - 目标项目编号: {tender_project_id}, 目标项目名称: {tender_project_name}")
@@ -438,16 +443,12 @@ class ProjectInfoAgent(BaseAgent):
         # 合并去重错误（避免AI和正则重复检测相同错误）
         merged_errors = self._merge_and_deduplicate_errors(errors, regex_errors)
         
-        # 计算检测置信度
-        confidence = self._calculate_detection_confidence(len(merged_errors), content, tender_project_id, tender_project_name)
-        
         result = {
             "tender_project_id": tender_project_id,
             "tender_project_name": tender_project_name,
             "has_errors": len(merged_errors) > 0,
             "error_count": len(merged_errors),
             "errors": merged_errors,
-            "confidence": confidence,
             "detection_methods": {
                 "ai_errors_count": len(ai_errors) if ai_errors else 0,
                 "regex_errors_count": len(regex_errors),
@@ -455,7 +456,7 @@ class ProjectInfoAgent(BaseAgent):
             }
         }
         
-        self.logger.info(f"项目信息错误检测完成 - 发现 {len(merged_errors)} 个错误，置信度: {confidence:.3f}")
+        self.logger.info(f"项目信息错误检测完成 - 发现 {len(merged_errors)} 个错误")
         return result
     
     def _detect_errors_by_ai(self, content: str, tender_project_id: Optional[str], 
@@ -547,6 +548,10 @@ class ProjectInfoAgent(BaseAgent):
 - 即使是相同的错误值，如果出现在不同位置，也要分别报告
 - 详细说明每个错误的具体位置
 - 如果没有错误，返回空的errors数组
+- 为每个错误计算并返回置信度(0-1之间)，考虑因素包括：
+  * 错误的明确程度（0.9-1.0：明显错误，0.7-0.9：可能错误，0.5-0.7：不确定）
+  * 上下文的相关性（是否确实是当前项目信息）
+  * 是否排除了历史案例干扰
 """
         return prompt
     
@@ -564,12 +569,18 @@ class ProjectInfoAgent(BaseAgent):
                     backend_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                     qwen_path = os.path.join(backend_path, 'qwen_service.py')
                     spec = importlib.util.spec_from_file_location("qwen_service", qwen_path)
+                    if spec is None or spec.loader is None:
+                        raise ImportError(f"无法加载模块规范: {qwen_path}")
                     qwen_module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(qwen_module)
                     QwenAnalysisService = qwen_module.QwenAnalysisService
-                
+
                 ai_service = QwenAnalysisService()
-                response = ai_service._call_qwen_api(prompt)
+                provider = os.getenv("LLM_PROVIDER", "qwen")
+                try:
+                    response = ai_service._call_model_api(provider, prompt)
+                except AttributeError:
+                    response = ai_service._call_qwen_api(prompt)
                 
                 # 解析响应
                 result = self._parse_ai_response(response)
@@ -764,59 +775,7 @@ class ProjectInfoAgent(BaseAgent):
         location = error.get('context', '')[:50]  # 使用上下文的前50个字符作为位置标识
         return f"{error.get('type', '')}:{error.get('found_value', '')}:{error.get('correct_value', '')}:{location}"
     
-    def _calculate_detection_confidence(self, error_count: int, content: str, 
-                                      tender_project_id: Optional[str], 
-                                      tender_project_name: Optional[str]) -> float:
-        """
-        计算检测置信度
-        ==============
-        
-        基于多个因素计算检测结果的可信度：
-        1. 错误数量
-        2. 内容长度
-        3. 目标信息的完整性
-        
-        Args:
-            error_count (int): 检测到的错误数量
-            content (str): 分析的内容
-            tender_project_id (Optional[str]): 目标项目编号
-            tender_project_name (Optional[str]): 目标项目名称
-            
-        Returns:
-            float: 置信度分数（0-1之间）
-        """
-        base_confidence = 0.9  # 基础置信度
-        
-        # 因子1: 根据错误数量调整
-        if error_count == 0:
-            error_factor = 1.0  # 没有错误，置信度高
-        elif error_count <= 2:
-            error_factor = 0.8  # 少量错误
-        elif error_count <= 5:
-            error_factor = 0.6  # 中等错误
-        else:
-            error_factor = 0.4  # 大量错误，可能检测有误
-        
-        # 因子2: 根据内容长度调整
-        content_length = len(content)
-        if content_length < 1000:
-            length_factor = 0.7  # 内容太短，可能不够准确
-        elif content_length < 5000:
-            length_factor = 1.0  # 合适的长度
-        else:
-            length_factor = 0.9  # 内容很长，可能有噪音
-        
-        # 因子3: 根据目标信息完整性调整
-        target_completeness = 0.5  # 基础分
-        if tender_project_id:
-            target_completeness += 0.25
-        if tender_project_name:
-            target_completeness += 0.25
-        
-        # 计算最终置信度
-        final_confidence = base_confidence * error_factor * length_factor * target_completeness
-        
-        return max(0.0, min(1.0, final_confidence))
+
     
     def _normalize_project_info(self, text: str) -> str:
         """标准化项目信息文本（用于比较）"""

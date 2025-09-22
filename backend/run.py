@@ -44,14 +44,28 @@ from dotenv import load_dotenv
 # 从.env文件中读取配置，如API密钥、服务参数等
 load_dotenv()
 
-# === API密钥验证 ===
-# 检查阿里云百炼API密钥是否已正确配置
-api_key = os.getenv("DASHSCOPE_API_KEY")
-if not api_key or api_key == "your_api_key_here":
-    print("❌ 错误: 请在 .env 文件中设置您的 DASHSCOPE_API_KEY")
-    print("📖 获取API密钥: https://dashscope.console.aliyun.com/")
-    print("💡 配置说明: 复制.env.template为.env并填入真实的API密钥")
-    sys.exit(1)
+# === API密钥验证（基于全局提供方）===
+provider = os.getenv("LLM_PROVIDER", "qwen").lower()
+if provider in ("qwen", "ali", "dashscope"):
+    api_key = os.getenv("DASHSCOPE_API_KEY")
+    if not api_key or api_key == "your_api_key_here":
+        print("❌ 错误: 请在 backend/.env 文件中设置 DASHSCOPE_API_KEY")
+        print("📖 获取API密钥: https://dashscope.console.aliyun.com/")
+        print("💡 配置说明: 复制.env.template为.env并填入真实的API密钥；或设置 LLM_PROVIDER=doubao 使用方舟")
+        sys.exit(1)
+elif provider in ("doubao", "ark", "volc", "volcengine"):
+    ark_key = os.getenv("ARK_API_KEY")
+    if not ark_key:
+        print("❌ 错误: LLM_PROVIDER=doubao 时需要在 backend/.env 设置 ARK_API_KEY")
+        print("📖 获取API密钥: https://console.volcengine.com/ark")
+        print("💡 可选: 设置 DOUBAO_MODEL_ID 为您的推理接入点ID；未设置将使用默认模型名")
+        sys.exit(1)
+else:
+    print(f"⚠️ 警告: 未知的 LLM_PROVIDER='{provider}'，将默认使用 Qwen，并校验 DASHSCOPE_API_KEY")
+    api_key = os.getenv("DASHSCOPE_API_KEY")
+    if not api_key:
+        print("❌ 错误: 请在 backend/.env 文件中设置 DASHSCOPE_API_KEY")
+        sys.exit(1)
 
 # === 应用启动 ===
 if __name__ == "__main__":

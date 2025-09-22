@@ -1,7 +1,43 @@
-# 投标文件合规性检查工具 (BidAnalysisTool)
+# 投标文件合规性检查工具 (BidAn### 🚀 最新更新 (v1.4)
+## 🌟 功能特点
+
+- **🤖 智能文档分析**: 支持Word（.docx）、PDF（.pdf）等格式的深度解析
+- **🏗️ AI Agent架构**: 模块化设计，包含项目信息提取、文档拆分、图像处理等专业代理
+- **📋 多维度分析**: 废标条款识别、项目信息匹配、合规性检查、风险评估
+- **🖥️ 双页面设计**: 招标文件分析和投标文件检测分离，专业化操作界面
+- **🔄 文档处理工作流**: 完整的文档预处理流程，包含目录提取、文档拆分、图像分离
+- **📊 智能进度追踪**: 实时显示文档处理进度，完成后自动跳转到分析页面
+- **🧹 智能清理工具**: 支持选择性清理数据库表和临时文件，灵活的数据管理
+- **📁 结构化存储**: 按文件ID组织的temp目录，包含目录markdown和拆分文档
+- **💾 数据持久化**: SQLite数据库完整存储分析历史和文件记录
+- **🔒 本地化部署**: 数据本地存储，安全可控，支持离线使用
+- **⚡ 一键启动**: Windows/Linux启动脚本，自动环境配置
+- **🎨 现代化界面**: ### 🗺️ 版本规划
+
+### 当前版本 (v1.4)
+- ✅ 完整的文档处理工作流程
+- ✅ 智能进度追踪和自动跳转
+- ✅ 文档处理协调器架构
+- ✅ 临时文件管理和清理工具
+- ✅ 类型安全代码优化
+- ✅ 增强的用户体验设计
+
+### 未来版本
+- 🔄 v1.5: 批量文件处理和任务队列
+- 🔄 v1.6: 用户认证和权限管理
+- 🔄 v1.7: Docker容器化部署
+- 🔄 v1.8: 更多文件格式支持
+- 🔄 v2.0: 微服务架构和云原生部署主题切换，响应式布局档处理工作流** - 集成目录提取、文档拆分、图像分离的完整文档预处理流程
+- 📊 **智能进度追踪** - 文档处理完成后自动跳转到分析页面，提供实时进度反馈
+- 🛠️ **文档处理协调器** - 新增`DocumentProcessor`类统一协调多个AI代理的工作流程  
+- 📁 **临时文件管理** - 完善的temp目录结构，支持文档拆分结果的组织化存储
+- 🧹 **智能清理工具** - 全新的数据库和文件清理工具，支持选择性清理不同类型的数据
+- 🔧 **类型安全优化** - 修复所有类型注解错误，提升代码质量和IDE支持
+- 📈 **增强的用户体验** - 文档处理过程的可视化进度条和详细状态提示
+- 🗂️ **结构化temp目录** - 按文件ID组织的临时文件夹，包含目录markdown和拆分文档)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12 (Windows COM)](https://img.shields.io/badge/python-3.12%20preferred-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/Flask-2.3.3-green.svg)](https://flask.palletsprojects.com/)
 [![GitHub release](https://img.shields.io/github/release/biibibi/BidAnalysisTool.svg)](https://github.com/biibibi/BidAnalysisTool/releases)
 [![GitHub stars](https://img.shields.io/github/stars/biibibi/BidAnalysisTool.svg)](https://github.com/biibibi/BidAnalysisTool/stargazers)
@@ -18,28 +54,29 @@
 4. **风险评估** - 提供详细的合规性评估报告和改进建议
 5. **双文件预览** - 支持招标文件和投标文件同时预览对比
 
-### 🚀 最新更新 (v1.2)
+### 🚀 最新更新 (v1.3)
 
-- ✨ **新增双文件预览功能** - 2x1网格布局，支持招标和投标文件同时查看
-- 👁️ **智能预览系统** - 一键预览文档内容，支持在线查看和下载
-- 🎨 **全新UI界面** - 采用现代化设计，响应式布局，支持多主题切换
-- 🔧 **优化文件管理** - 完善的文件上传、存储和管理机制，UUID文件命名
-- 📊 **增强分析引擎** - 基于AI Agent的智能分析架构，85+文件分析记录
-- 🛡️ **安全性提升** - 本地化部署，数据安全可控，完整的数据库管理
-- 📁 **项目结构优化** - 清理冗余目录，优化文件存储路径
+- ✨ **完善的AI代理架构** - 智能文档拆分、图像分离、目录提取等高级功能
+- 📊 **双页面设计** - 招标文件分析页面和投标文件检测页面分离，专业化操作
+- � **多模型支持** - 支持Qwen和豆包(字节跳动)双模型路由，提升分析效果
+- 📁 **智能文档处理** - Word文档自动拆分、图像重命名、目录智能提取
+- �️ **数据库优化** - 完善的SQLite数据管理，支持分析历史记录和结果查询
+- 🎨 **界面美化** - 现代化Bootstrap 5设计，支持多主题切换
+- � **项目信息匹配** - 智能检测投标文件与招标文件项目信息一致性
+- � **结构化存储** - 规范化项目结构，排除测试文件，提升代码质量
 
 ## 🌟 功能特点
 
-- **🤖 智能文档分析**: 支持Word（.docx）、PDF（.pdf）和文本（.txt）文件格式的智能解析
-- **🏗️ AI Agent架构**: 采用模块化AI Agent设计，易于扩展和维护
-- **📋 多维度分析**: 项目信息提取、废标条款识别、合规性检查
-- **🖥️ 友好的Web界面**: 直观的操作界面，支持拖放上传
-- **👁️ 双文件预览**: 2x1网格布局，招标投标文件同时查看，一键预览功能
-- **📊 详细分析报告**: 提供完整的合规性检查报告和风险评估
-- **�️ 智能数据管理**: SQLite数据库存储，85+文件记录，完整的分析历史
-- **�🔒 本地化部署**: 支持本地部署，数据安全可控
-- **⚡ 一键启动**: 提供Windows和Linux一键启动脚本
-- **🎨 主题切换**: 支持5种界面主题（蓝色、紫色、绿色、橙色、深色）
+- **🤖 智能文档分析**: 支持Word（.docx）、PDF（.pdf）等格式的深度解析
+- **🏗️ AI Agent架构**: 模块化设计，包含项目信息提取、文档拆分、图像处理等专业代理
+- **📋 多维度分析**: 废标条款识别、项目信息匹配、合规性检查、风险评估
+- **🖥️ 双页面设计**: 招标文件分析和投标文件检测分离，专业化操作界面
+- **� 智能匹配**: 自动检测投标文件与招标文件的项目信息一致性
+- **📊 详细分析报告**: 结构化分析结果，包含废标条款、建议和风险评级
+- **💾 数据持久化**: SQLite数据库完整存储分析历史和文件记录
+- **🔒 本地化部署**: 数据本地存储，安全可控，支持离线使用
+- **⚡ 一键启动**: Windows/Linux启动脚本，自动环境配置
+- **🎨 现代化界面**: Bootstrap 5设计，支持多主题切换，响应式布局
 
 ## 🏗️ 系统架构
 
@@ -101,10 +138,10 @@ chmod +x start.sh
 ```
 
 启动脚本会自动：
-1. 创建Python虚拟环境
-2. 安装所需依赖
-3. 检查环境配置
-4. 启动后端服务
+1. 使用 Python 3.12 创建虚拟环境 `.venv312`（若未安装将提示安装）
+2. 安装所需依赖并确保 `pywin32`（COM 支持）就绪
+3. 检查环境配置并从模板生成 `.env`
+4. 启动后端服务（确保 Word 相关 Agent 可用）
 
 ### 方式二：手动安装
 
@@ -116,15 +153,14 @@ cd BidAnalysisTool
 
 #### 2. 配置Python环境
 
-推荐使用Python 3.8或更高版本：
+Windows 强烈推荐 Python 3.12（启用 Word COM 自动化）：
 
 ```bash
-# 创建虚拟环境
-python -m venv .venv
+# 创建 Python 3.12 虚拟环境（Windows）
+py -3.12 -m venv .venv312
 
-# 激活虚拟环境
-# Windows:
-.venv\Scripts\activate
+# 激活虚拟环境（Windows）
+.venv312\Scripts\activate
 # macOS/Linux:
 source .venv/bin/activate
 ```
@@ -132,6 +168,8 @@ source .venv/bin/activate
 #### 3. 安装依赖
 ```bash
 pip install -r backend/requirements.txt
+# Windows 上启用 COM 支持（Word 自动化所需）
+pip install pywin32==306
 ```
 
 #### 4. 配置API密钥
@@ -141,16 +179,34 @@ pip install -r backend/requirements.txt
 cp backend/.env.template backend/.env
 ```
 
-编辑 `backend/.env` 文件，填入您的阿里云百炼API密钥：
+编辑 `backend/.env` 文件，配置您选择的AI模型服务（可选其一或同时配置）：
+
 ```env
-DASHSCOPE_API_KEY=your_actual_api_key_here
+# 全局模型提供方选择 (qwen 或 doubao)
+LLM_PROVIDER=qwen
+
+# Qwen(阿里云百炼) 配置
+DASHSCOPE_API_KEY=your_qwen_api_key
+
+# 豆包(字节跳动Ark) 配置  
+ARK_API_KEY=your_ark_api_key
+DOUBAO_MODEL_ID=ep-20241215xxx  # 您的推理接入点ID
+ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
 ```
 
 **获取API密钥：**
+
+**Qwen(阿里云百炼)：**
 1. 访问 [阿里云百炼控制台](https://dashscope.console.aliyun.com/)
 2. 注册并登录阿里云账号
 3. 在API密钥管理页面创建新的API密钥
-4. 复制密钥并粘贴到 `.env` 文件中
+4. 复制密钥并设置到 `DASHSCOPE_API_KEY`
+
+**豆包(字节跳动Ark)：**
+1. 访问 [火山引擎Ark控制台](https://console.volcengine.com/ark/)
+2. 创建API Key和推理接入点
+3. 将API Key设置到 `ARK_API_KEY`
+4. 将推理接入点ID设置到 `DOUBAO_MODEL_ID`
 
 #### 5. 启动服务
 ```bash
@@ -191,7 +247,12 @@ python run.py
 
 4. **✅ 投标文件检查**
    - 同时上传招标文件和投标文件
-   - 点击"投标文件分析"进行合规性检查
+   - 点击"投标文件分析"进行文档处理和合规性检查
+   - 系统会先进行文档预处理：
+     - 提取文档目录结构
+     - 按章节拆分文档
+     - 生成结构化的markdown目录文件
+   - 处理完成后自动跳转到分析页面
    - 生成详细的检查报告和风险评估
    - 提供改进建议
 
@@ -265,30 +326,54 @@ GET /api/analysis/{analysis_id}
 }
 ```
 
-### 文件预览
+### 文档处理工作流
 ```http
-GET /preview/<file_id>
+POST /api/process-bid-document
+Content-Type: application/json
 
-响应：
-- 直接返回文件内容（用于浏览器预览）
-- 支持PDF、Word文档在线预览
-```
-
-### 文件列表
-```http
-GET /api/files
+{
+    "file_id": "uuid"
+}
 
 响应：
 {
     "success": true,
-    "files": [
-        {
-            "id": "uuid",
-            "filename": "文件名",
-            "upload_time": "2025-01-XX XX:XX:XX",
-            "file_type": "招标文件/投标文件"
-        }
-    ]
+    "work_dir": "/temp/file_id/",
+    "toc_result": {
+        "success": true,
+        "toc_count": 12,
+        "md_path": "/temp/file_id/file_id_目录.md"
+    },
+    "split_result": {
+        "success": true,
+        "split_count": 6,
+        "split_dir": "/temp/file_id/split_documents/"
+    }
+}
+```
+
+### 处理状态查询
+```http
+GET /api/process-bid-document/status/{file_id}
+
+响应：
+{
+    "exists": true,
+    "has_toc": true,
+    "has_splits": true,
+    "split_count": 6,
+    "split_files": ["01_营业执照.docx", "02_投标函.docx", ...]
+}
+```
+
+### 项目信息提取
+```http
+POST /api/extract-project-info
+Content-Type: application/json
+
+{
+    "file_id": "uuid",
+    "document_type": "tender"  // 或 "bid" 或 "auto"
 }
 ```
 
@@ -312,40 +397,47 @@ BidAnalysisTool/
 │   ├── run.py                 # 启动脚本
 │   ├── database.py            # 数据库管理
 │   ├── file_handler.py        # 文件处理服务
-│   ├── qwen_service.py        # Qwen大模型服务
+│   ├── qwen_service.py        # 多模型AI服务
 │   ├── requirements.txt       # Python依赖
 │   ├── .env.template         # 环境配置模板
-│   ├── ai_agents/            # AI代理模块
-│   │   ├── __init__.py
-│   │   ├── agent_manager.py   # 代理管理器
-│   │   ├── base_agent.py      # 基础代理类
-│   │   └── project_info_agent.py # 项目信息提取代理
-│   └── uploads/              # 上传文件存储
+│   └── ai_agents/            # AI代理模块
+│       ├── __init__.py
+│       ├── agent_manager.py   # 代理管理器
+│       ├── base_agent.py      # 基础代理类
+│       ├── document_processor.py # 文档处理协调器
+│       ├── project_info_agent.py # 项目信息提取代理
+│       ├── word_splitter.py   # Word文档拆分代理
+│       ├── word_image_separator.py # 图像分离代理
+│       └── wordtoc_agent.py   # 目录提取代理
 ├── frontend/                  # 前端界面
-│   ├── index.html            # 基础功能界面
-│   └── bid_analysis.html     # 完整分析界面
-├── test/                     # 测试文件
-│   ├── Qwen.py              # Qwen API测试
-│   ├── test_upload.py       # 上传功能测试
-│   └── test_project_info_agent.py # 代理测试
+│   ├── index.html            # 招标文件分析页面
+│   └── bid_analysis.html     # 投标文件检测页面
 ├── static/                   # 静态资源
 │   └── icon/                # 图标文件
-├── ref/                     # 参考文档
+├── uploads/                  # 文件上传存储
+├── temp/                     # 临时文件处理目录
+├── ref/                     # 参考文档和工具
+├── bid_analysis.db          # SQLite数据库文件
+├── analyze_doc_structure.py # 文档结构分析工具
+├── examine_database.py      # 数据库检查工具
+├── clear_files_table.py     # 数据库清理工具
+├── 课题方案书.md              # 项目方案文档
 ├── start.bat               # Windows启动脚本
 ├── start.sh                # Linux/macOS启动脚本
 ├── README.md               # 项目说明
 ├── LICENSE                 # 许可证
-└── STRUCTURE.md            # 项目结构说明
+└── STRUCTURE.md            # 项目结构详细说明
 ```
 
 ## 🔧 技术栈
 
 ### 后端技术
-- **Python 3.8+**: 主要编程语言，支持异步处理
+- **Python 3.12 (Windows 推荐)**: COM 自动化稳定；其他平台 3.8+ 兼容
 - **Flask 2.3.3**: 轻量级Web框架，RESTful API设计
 - **Flask-CORS**: 跨域请求支持，前后端分离
 - **SQLite**: 轻量级关系数据库，85+文件记录管理
 - **python-docx**: Word文档解析处理
+- **pywin32 (Windows)**: Word COM 自动化（目录定位、格式复制、拆分）
 - **PyPDF2**: PDF文档内容提取
 - **UUID**: 安全的文件命名和标识系统
 - **python-dotenv**: 环境变量和配置管理
@@ -359,12 +451,16 @@ BidAnalysisTool/
 - **文件预览**: 在线预览功能，支持PDF和Word文档
 
 ### AI服务
-- **阿里云百炼平台**: 提供Qwen大模型API服务
+- **多模型支持**: 支持Qwen(阿里云百炼)和豆包(字节跳动)双模型路由
 - **AI Agent架构**: 模块化智能代理系统设计
-  - `ProjectInfoAgent`: 项目信息提取专用代理
+  - `DocumentProcessor`: 文档处理协调器，统一管理处理工作流程
+  - `ProjectInfoAgent`: 项目信息提取和匹配专用代理
+  - `WordSplitterAgent`: Word文档智能拆分代理
+  - `WordImageSeparatorAgent`: 图像分离和重命名代理
+  - `WordTOCAgent`: 目录提取和结构化代理
   - `BaseAgent`: 通用代理基础类，支持扩展
-  - `AgentManager`: 代理管理器，统一调度
-- **智能分析引擎**: 文档理解、合规检查、风险评估
+  - `AgentManager`: 代理统一管理和调度器
+- **智能分析引擎**: 文档理解、合规检查、风险评估、项目匹配
 
 ## ⚠️ 注意事项
 
@@ -382,9 +478,11 @@ BidAnalysisTool/
    - 需要稳定的网络连接访问阿里云百炼API
    - 建议在企业网络环境下使用
 
-4. **性能优化**:
+4. **性能与兼容性**:
    - 大文件分析时间较长，请耐心等待
    - 建议在性能较好的服务器上部署
+ - Word 相关 Agent（目录定位、拆分、图片提取重命名）在 Windows + Office + Python 3.12 + pywin32 下表现最佳
+ - 非 Windows 环境将自动回退到 `python-docx` 路径（不含精确位置）
 
 ## 🐛 常见问题
 
@@ -472,18 +570,21 @@ A: 当前版本暂不提供Docker镜像，可以根据需要自行构建
 
 ## 🗺️ 版本规划
 
-### 当前版本 (v1.0)
-- ✅ 基础文档分析功能
-- ✅ AI Agent架构
-- ✅ Web界面
-- ✅ 一键启动脚本
+### 当前版本 (v1.3)
+- ✅ 完整的AI Agent架构
+- ✅ 双页面专业化设计
+- ✅ 多模型支持(Qwen/豆包)
+- ✅ 智能文档处理能力
+- ✅ 数据库完整管理
+- ✅ 项目信息智能匹配
+- ✅ Word文档高级处理
 
 ### 未来版本
-- 🔄 v1.1: 支持更多文件格式
-- 🔄 v1.2: 批量文件处理
-- 🔄 v1.3: 用户认证系统
-- 🔄 v1.4: Docker容器化部署
-- 🔄 v2.0: 微服务架构重构
+- 🔄 v1.4: 批量文件处理和任务队列
+- 🔄 v1.5: 用户认证和权限管理
+- 🔄 v1.6: Docker容器化部署
+- 🔄 v1.7: 更多文件格式支持
+- 🔄 v2.0: 微服务架构和云原生部署
 
 ## 📞 技术支持
 

@@ -6,7 +6,7 @@ import sqlite3
 import os
 
 # 检查数据库文件
-db_path = 'bid_analysis.db'
+db_path = '../bid_analysis.db'
 if os.path.exists(db_path):
     print(f"数据库文件存在: {db_path}")
     print(f"文件大小: {os.path.getsize(db_path)} bytes")

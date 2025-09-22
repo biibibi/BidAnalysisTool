@@ -2,8 +2,8 @@ import os
 import json
 import re
 from docx import Document
-import win32com.client
 import tempfile
+from typing import Any, Callable, Optional, cast
 
 def read_positions_from_markdown(markdown_path):
     """
@@ -45,18 +45,26 @@ def read_word_toc_docx(input_path):
     toc_items = []
 
     for paragraph in doc.paragraphs:
-        # 检查段落是否应用了标题样式（Heading 1~9）
-        if paragraph.style.name.startswith("Heading"):
+        # 兼容中文“标题 X”与英文“Heading X”
+        style_name = paragraph.style.name or ""
+        level = None
+        if style_name.startswith("Heading "):
             try:
-                # 提取层级（如"Heading 1" → 1）
-                level = int(paragraph.style.name.replace("Heading ", ""))
-                # 提取标题文本（去除空字符）
-                title = paragraph.text.strip()
-                if title:  # 跳过空标题
-                    toc_items.append({"标题文本": title, "层级": level})
+                level = int(style_name.replace("Heading ", ""))
             except ValueError:
-                # 忽略非标准标题样式（如"Heading 1 - 自定义"）
-                continue
+                level = None
+        elif style_name.startswith("标题 ") or style_name.startswith("标题"):
+            # 常见中文样式："标题 1"、"标题1"
+            sn = style_name.replace("标题 ", "标题")
+            try:
+                level = int(sn.replace("标题", ""))
+            except ValueError:
+                level = None
+
+        if level is not None and 1 <= level <= 9:
+            title = (paragraph.text or "").strip()
+            if title:
+                toc_items.append({"标题文本": title, "层级": level})
 
     return toc_items
 
@@ -70,25 +78,28 @@ def read_word_toc_doc(input_path, record_positions=False):
     import pythoncom
     import time
     import pywintypes
+    try:
+        import win32com.client
+    except Exception as e:
+        raise ImportError("win32com 不可用，无法使用COM解析Word文档") from e
     
-    toc_items = []
-    word_app = None
-    doc = None
+    toc_items: list[dict[str, Any]] = []
+    word_app: Any = None
+    doc: Any = None
     
-    def com_retry(func, *args, max_retries=3, delay=1.0, **kwargs):
+    def com_retry(func: Callable[..., Any], *args: Any, max_retries: int = 3, delay: float = 1.0, **kwargs: Any) -> Any:
         """COM 调用重试机制"""
         for attempt in range(max_retries):
             try:
                 return func(*args, **kwargs)
             except pywintypes.com_error as e:
-                if hasattr(e, 'hresult'):
-                    hr = e.hresult
-                    if hr in (-2147418111, -2147023174):  # RPC_E_CALL_REJECTED, RPC_E_SERVER_UNAVAILABLE
-                        if attempt < max_retries - 1:
-                            print(f"   🔄 COM 调用失败，{delay:.1f}s 后重试... ({attempt + 1}/{max_retries})")
-                            time.sleep(delay)
-                            delay *= 1.5  # 指数退避
-                            continue
+                hr = getattr(e, 'hresult', None)
+                if isinstance(hr, int) and hr in (-2147418111, -2147023174):  # RPC_E_CALL_REJECTED, RPC_E_SERVER_UNAVAILABLE
+                    if attempt < max_retries - 1:
+                        print(f"   🔄 COM 调用失败，{delay:.1f}s 后重试... ({attempt + 1}/{max_retries})")
+                        time.sleep(delay)
+                        delay *= 1.5  # 指数退避
+                        continue
                 raise
     
     try:
@@ -97,25 +108,29 @@ def read_word_toc_doc(input_path, record_positions=False):
         print("✅ COM 初始化成功")
         
         # 创建Word应用程序对象（带重试）
-        word_app = com_retry(win32com.client.Dispatch, "Word.Application")
+        word_app = cast(Any, com_retry(win32com.client.Dispatch, "Word.Application"))
         print("✅ Word 应用程序创建成功")
         
-        word_app.Visible = False  # 不显示Word窗口
+        # 不显示Word窗口
+        try:
+            word_app.Visible = False  # type: ignore[attr-defined]
+        except Exception:
+            pass
         
         # 设置 Word 选项以减少问题
         try:
-            word_app.DisplayAlerts = 0  # 禁用警告对话框
-            word_app.ScreenUpdating = False  # 禁用屏幕更新
+            word_app.DisplayAlerts = 0  # type: ignore[attr-defined]
+            word_app.ScreenUpdating = False  # type: ignore[attr-defined]
         except Exception:
             pass
         
         # 打开文档（带重试）
-        doc = com_retry(word_app.Documents.Open, os.path.abspath(input_path))
+        doc = cast(Any, com_retry(word_app.Documents.Open, os.path.abspath(input_path)))  # type: ignore[attr-defined]
         print(f"✅ 文档打开成功: {os.path.basename(input_path)}")
         
         # 获取段落总数
         try:
-            total_paragraphs = com_retry(lambda: doc.Paragraphs.Count)
+            total_paragraphs = com_retry(lambda: doc.Paragraphs.Count)  # type: ignore[attr-defined]
             print(f"📄 文档包含 {total_paragraphs} 个段落")
         except Exception:
             total_paragraphs = None
@@ -125,12 +140,13 @@ def read_word_toc_doc(input_path, record_positions=False):
         while True:
             try:
                 # 使用索引访问而不是枚举器，避免 RPC 问题
-                paragraph = com_retry(lambda idx=para_idx: doc.Paragraphs(idx))
+                paragraph: Any = com_retry(lambda idx=para_idx: doc.Paragraphs(idx))  # type: ignore[attr-defined]
                 
                 # 检查段落样式
-                style_name = com_retry(lambda: paragraph.Style.NameLocal)
+                style_name_raw: Any = com_retry(lambda: paragraph.Style.NameLocal)  # type: ignore[attr-defined]
+                style_name: str = str(style_name_raw) if style_name_raw is not None else ""
                 
-                if "标题" in style_name or "Heading" in style_name:
+                if ("标题" in style_name) or ("Heading" in style_name):
                     try:
                         # 尝试提取层级
                         if "标题" in style_name:
@@ -144,7 +160,8 @@ def read_word_toc_doc(input_path, record_positions=False):
                             level = 1
                         
                         # 提取标题文本
-                        title = com_retry(lambda: paragraph.Range.Text.strip())
+                        title_raw: Any = com_retry(lambda: paragraph.Range.Text)  # type: ignore[attr-defined]
+                        title = str(title_raw).strip()
                         # 移除段落标记符
                         title = title.replace('\r', '').replace('\x07', '')
                         
@@ -152,7 +169,7 @@ def read_word_toc_doc(input_path, record_positions=False):
                             item_data = {"标题文本": title, "层级": level}
                             if record_positions:
                                 item_data["段落索引"] = para_idx
-                                item_data["起始位置"] = com_retry(lambda: paragraph.Range.Start)
+                                item_data["起始位置"] = com_retry(lambda: paragraph.Range.Start)  # type: ignore[attr-defined]
                             toc_items.append(item_data)
                             print(f"   📋 [L{level}] {title}")
                     except (ValueError, AttributeError):
@@ -165,12 +182,13 @@ def read_word_toc_doc(input_path, record_positions=False):
                     break
                     
             except pywintypes.com_error as e:
-                if hasattr(e, 'hresult') and e.hresult == -2147024809:  # 超出边界，到达文档末尾
+                hr2 = getattr(e, 'hresult', None)
+                if isinstance(hr2, int) and hr2 == -2147024809:  # 超出边界，到达文档末尾
                     break
                 else:
                     # 其他 COM 错误，尝试重试
                     try:
-                        com_retry(lambda idx=para_idx: doc.Paragraphs(idx), max_retries=1)
+                        com_retry(lambda idx=para_idx: doc.Paragraphs(idx), max_retries=1)  # type: ignore[attr-defined]
                         continue
                     except:
                         print(f"   ⚠️ 段落 {para_idx} 访问失败，跳过")
@@ -189,12 +207,12 @@ def read_word_toc_doc(input_path, record_positions=False):
     finally:
         # 关闭文档和Word应用程序
         try:
-            if doc:
+            if doc is not None:
                 com_retry(doc.Close, max_retries=1)
         except Exception:
             pass
         try:
-            if word_app:
+            if word_app is not None:
                 com_retry(word_app.Quit, max_retries=1)
         except Exception:
             pass
@@ -220,8 +238,13 @@ def read_word_toc(input_path, record_positions=False):
     
     if file_ext == '.docx':
         if record_positions:
-            print("检测到.docx格式，使用COM组件解析并记录位置...")
-            return read_word_toc_doc(input_path, record_positions)
+            # 优先尝试COM以记录位置信息；失败则回退到python-docx
+            print("检测到.docx格式，尝试使用COM组件解析并记录位置...")
+            try:
+                return read_word_toc_doc(input_path, record_positions)
+            except Exception as e:
+                print(f"⚠️ COM不可用或解析失败，回退到python-docx解析（不包含位置信息）: {e}")
+                return read_word_toc_docx(input_path)
         else:
             print("检测到.docx格式，使用python-docx解析...")
             return read_word_toc_docx(input_path)

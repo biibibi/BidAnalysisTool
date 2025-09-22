@@ -34,18 +34,28 @@ from qwen_service import QwenAnalysisService
 from file_handler import FileHandler
 from database import DatabaseManager
 from ai_agents.agent_manager import agent_manager
+from ai_agents.document_processor import document_processor
 
 # 加载环境变量
 load_dotenv()
 
-# 创建Flask应用实例
-app = Flask(__name__)
+# 创建Flask应用实例（映射根目录下的static到/web静态路径）
+app = Flask(
+    __name__,
+    static_folder="../static",      # 正确指向仓库根目录下的static
+    static_url_path="/static"       # 浏览器访问路径保持为 /static
+)
 
 # 启用跨域资源共享(CORS)，允许前端JavaScript访问API
 CORS(app)  # 允许跨域请求
 
 # === 应用配置 ===
-app.config['UPLOAD_FOLDER'] = 'uploads'              # 文件上传目录
+# 智能确定uploads目录路径（项目根目录下）
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+uploads_path = os.path.join(project_root, 'uploads')
+
+app.config['UPLOAD_FOLDER'] = uploads_path              # 文件上传目录（项目根目录下）
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB 最大文件大小限制
 
 # 确保上传目录存在，如果不存在则创建
@@ -81,6 +91,14 @@ def index():
     首页路由 - 提供前端HTML页面
     """
     return send_from_directory('../frontend', 'index.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    """
+    浏览器站点图标
+    处理默认的 /favicon.ico 请求，避免终端出现 404 日志。
+    """
+    return app.send_static_file('icon/Unicom1.png')
 
 @app.route('/bid_analysis')
 def bid_analysis():
@@ -145,25 +163,49 @@ def upload_file():
             return jsonify({'error': '没有选择文件'}), 400
         
         # 验证文件类型是否在允许的范围内
-        if not file_handler.is_allowed_file(file.filename):
+        # 显式确保文件名为字符串，避免类型检查 None 报错
+        filename = file.filename or ""
+        if not file_handler.is_allowed_file(filename):
             return jsonify({'error': '不支持的文件类型'}), 400
         
         # 生成唯一的文件ID，用于内部管理和避免文件名冲突
         file_id = str(uuid.uuid4())
         
-        # 保存文件到指定目录
-        file_path = file_handler.save_file(file, file_id, app.config['UPLOAD_FOLDER'])
+        # 保存文件到临时位置以获取文件信息
+        temp_file_path = file_handler.save_file(file, file_id, app.config['UPLOAD_FOLDER'])
+        
+        # 获取文件大小
+        file_size = os.path.getsize(temp_file_path)
+        
+        # 检查是否存在重复文件（仅基于文件大小判断）
+        duplicate_file = db_manager.find_duplicate_file(file_size)
+        if duplicate_file:
+            # 删除刚上传的临时文件，因为已存在相同大小的文件
+            os.remove(temp_file_path)
+            
+            # 返回已存在文件的信息
+            return jsonify({
+                'file_id': duplicate_file['id'],
+                'filename': duplicate_file['filename'],
+                'message': f'检测到相同大小的文件已存在，直接使用现有文件（大小: {file_size} 字节）',
+                'is_duplicate': True,
+                'original_upload_time': duplicate_file['upload_time'],
+                'file_size': file_size
+            })
+        
+        # 文件不重复，继续处理
+        file_path = temp_file_path
         
         # 提取文件内容（文本内容）
         content = file_handler.extract_content(file_path)
         
         # 将文件记录保存到数据库
-        db_manager.save_file_record(file_id, file.filename, file_path, content)
+        db_manager.save_file_record(file_id, filename, file_path, content)
         
         # 返回成功响应
         return jsonify({
             'file_id': file_id,
-            'filename': file.filename,
+            'filename': filename,
             'message': '文件上传成功'
         })
         
@@ -229,6 +271,8 @@ def analyze_tender():
         # 解析JSON请求数据
         data = request.get_json()
         file_id = data.get('file_id')
+        # 默认从环境变量读取全局提供方（可选：'qwen' 或 'doubao'）
+        provider = os.getenv('LLM_PROVIDER', 'qwen')
         
         # 验证必需参数
         error_response = validate_file_id(file_id)
@@ -239,10 +283,16 @@ def analyze_tender():
         file_record, error_response = get_file_record_or_error(file_id)
         if error_response:
             return error_response
+        if not file_record:
+            return jsonify({'error': '文件不存在'}), 404
         
-        # 使用Qwen AI分析招标文件内容
-        # 提取废标条款、要求和建议
-        analysis_result = qwen_service.analyze_tender_document(file_record['content'])
+        # 使用AI分析招标文件内容（可选模型路由，默认Qwen）
+        if provider:
+            analysis_result = qwen_service.analyze_tender_document_with_model(
+                file_record['content'], provider=provider
+            )
+        else:
+            analysis_result = qwen_service.analyze_tender_document(file_record['content'])
         
         # 将分析结果保存到数据库
         analysis_id = db_manager.save_tender_analysis(file_id, analysis_result)
@@ -323,6 +373,8 @@ def analyze_bid():
         data = request.get_json()
         file_id = data.get('file_id')
         tender_analysis_id = data.get('tender_analysis_id')
+        # 请求可显式指定；未指定则使用全局默认提供方
+        provider = data.get('provider') or os.getenv('LLM_PROVIDER', 'qwen')  # 可选：'qwen' 或 'doubao'
         
         # 验证必需参数
         error_response = validate_file_id(file_id)
@@ -333,6 +385,8 @@ def analyze_bid():
         file_record, error_response = get_file_record_or_error(file_id)
         if error_response:
             return error_response
+        if not file_record:
+            return jsonify({'error': '文件不存在'}), 404
         
         # 获取招标文件的分析结果（如果提供了分析ID）
         # 这将用于更精确的合规性检查
@@ -340,15 +394,18 @@ def analyze_bid():
         if tender_analysis_id:
             tender_analysis = db_manager.get_tender_analysis(tender_analysis_id)
         
-        # 使用Qwen AI分析投标文件合规性
-        # 如果有招标文件分析结果，会进行对比检查
-        analysis_result = qwen_service.analyze_bid_document(
-            file_record['content'], 
-            tender_analysis
-        )
+        # 进行投标文件合规性分析（可选模型路由，默认Qwen）
+        if provider:
+            analysis_result = qwen_service.analyze_bid_document_with_model(
+                file_record['content'], tender_analysis, provider=provider
+            )
+        else:
+            analysis_result = qwen_service.analyze_bid_document(
+                file_record['content'], tender_analysis
+            )
         
         # 将分析结果保存到数据库
-        analysis_id = db_manager.save_bid_analysis(file_id, analysis_result)
+        analysis_id = db_manager.save_bid_analysis(file_id, analysis_result, tender_analysis_id)
         
         # 返回分析结果
         return jsonify({
@@ -359,6 +416,117 @@ def analyze_bid():
         
     except Exception as e:
         # 捕获并返回所有异常
+        return handle_api_error(e)
+
+@app.route('/api/process-bid-document', methods=['POST'])
+def process_bid_document():
+    """
+    投标文件预处理接口
+    ==================
+    
+    对投标文件进行预处理，包括目录提取和文档拆分。
+    在正式分析之前调用，生成目录结构和拆分文档。
+    
+    请求方式：POST
+    请求头：Content-Type: application/json
+    请求参数：
+        {
+            "file_id": "已上传投标文件的ID"
+        }
+    
+    响应格式：
+        成功: {
+            "success": true,
+            "work_dir": "工作目录路径",
+            "toc_result": {目录提取结果},
+            "split_result": {文档拆分结果},
+            "message": "文档处理完成"
+        }
+        失败: {
+            "success": false,
+            "error": "错误信息"
+        }
+    
+    Returns:
+        JSON响应，包含处理结果或错误信息
+    """
+    try:
+        # 解析JSON请求数据
+        data = request.get_json()
+        file_id = data.get('file_id')
+        
+        # 验证必需参数
+        error_response = validate_file_id(file_id)
+        if error_response:
+            return error_response
+        
+        # 从数据库获取投标文件记录和路径
+        file_record, error_response = get_file_record_or_error(file_id)
+        if error_response:
+            return error_response
+        if not file_record:
+            return jsonify({'success': False, 'error': '文件不存在'}), 404
+        
+        file_path = file_record['file_path']
+        if not os.path.exists(file_path):
+            return jsonify({'success': False, 'error': '文件路径不存在'}), 404
+        
+        # 检查文件格式
+        if not file_path.lower().endswith(('.docx', '.doc')):
+            return jsonify({'success': False, 'error': '仅支持Word文档格式(.docx/.doc)'}), 400
+        
+        # 调用文档处理器
+        result = document_processor.process_bid_document(file_path, file_id)
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'文档处理异常: {str(e)}'
+        }), 500
+
+@app.route('/api/process-bid-document/status/<file_id>', methods=['GET'])
+def get_bid_document_status(file_id):
+    """
+    获取投标文件处理状态接口
+    ========================
+    
+    查询指定文件ID的文档处理状态。
+    
+    请求方式：GET
+    URL参数：
+        file_id: 文件ID
+    
+    响应格式：
+        {
+            "exists": true/false,
+            "work_dir": "工作目录路径",
+            "has_toc": true/false,
+            "toc_files": ["目录文件列表"],
+            "has_splits": true/false,
+            "split_files": ["拆分文件列表"],
+            "split_count": 拆分文件数量
+        }
+    
+    Returns:
+        JSON响应，包含处理状态信息
+    """
+    try:
+        # 验证文件ID
+        error_response = validate_file_id(file_id)
+        if error_response:
+            return error_response
+        
+        # 获取处理状态
+        status = document_processor.get_processing_status(file_id)
+        
+        return jsonify(status)
+        
+    except Exception as e:
         return handle_api_error(e)
 
 @app.route('/api/analysis/<analysis_id>', methods=['GET'])
@@ -521,12 +689,20 @@ def check_project_info():
         bid_file, error_response = get_file_record_or_error(bid_file_id)
         if error_response:
             return jsonify({'success': False, 'error': '投标文件不存在'}), 404
+        if not bid_file:
+            return jsonify({'success': False, 'error': '投标文件不存在'}), 404
+        if not bid_file:
+            return jsonify({'success': False, 'error': '投标文件不存在'}), 404
         
         # 获取招标文件信息（如果提供了招标文件ID）
         tender_info = None
         if tender_file_id:
             tender_file, tender_error = get_file_record_or_error(tender_file_id)
             if tender_error:
+                return jsonify({'success': False, 'error': '招标文件不存在'}), 404
+            if not tender_file:
+                return jsonify({'success': False, 'error': '招标文件不存在'}), 404
+            if not tender_file:
                 return jsonify({'success': False, 'error': '招标文件不存在'}), 404
             
             # 从招标文件提取项目信息
@@ -600,14 +776,6 @@ def check_project_info():
             'detection_details': detection_data
         }
         
-        # 保存检测结果到数据库
-        check_id = db_manager.save_project_info_check(
-            bid_file_id, 
-            tender_file_id, 
-            response_data
-        )
-        response_data['check_id'] = check_id
-        
         return jsonify({
             'success': True,
             'data': response_data,
@@ -669,6 +837,8 @@ def extract_project_info():
         file_record, error_response = get_file_record_or_error(file_id)
         if error_response:
             return error_response
+        if not file_record:
+            return jsonify({'error': '文件不存在'}), 404
         
         # 使用Agent提取项目信息
         result = agent_manager.extract_project_info(
@@ -676,11 +846,7 @@ def extract_project_info():
             document_type
         )
         
-        # 如果提取成功，保存到数据库
-        if result.get('success'):
-            project_info_id = db_manager.save_project_info(file_id, result['data'])
-            result['data']['info_id'] = project_info_id
-        
+        # 如果提取成功，返回结果
         return jsonify(result)
         
     except Exception as e:
@@ -748,6 +914,8 @@ def match_project_info():
         bid_file, error_response = get_file_record_or_error(bid_file_id)
         if error_response:
             return error_response
+        if not bid_file:
+            return jsonify({'error': '投标文件不存在'}), 404
         
         # 获取招标文件信息
         tender_info = data.get('tender_info')
@@ -758,6 +926,8 @@ def match_project_info():
                 tender_file, tender_error = get_file_record_or_error(tender_file_id)
                 if tender_error:
                     return tender_error
+                if not tender_file:
+                    return jsonify({'error': '招标文件不存在'}), 404
                 
                 # 提取招标文件的项目信息
                 tender_result = agent_manager.extract_project_info(
@@ -777,15 +947,7 @@ def match_project_info():
             tender_info
         )
         
-        # 保存匹配结果
-        if match_result.get('success'):
-            match_id = db_manager.save_project_match(
-                bid_file_id, 
-                tender_info, 
-                match_result['data']
-            )
-            match_result['data']['match_id'] = match_id
-        
+        # 返回匹配结果
         return jsonify(match_result)
         
     except Exception as e:
@@ -860,6 +1022,10 @@ def preview_file(file_id):
         file_record, error_response = get_file_record_or_error(file_id)
         if error_response:
             return error_response
+        if not file_record:
+            return jsonify({'error': '文件不存在'}), 404
+        if not file_record:
+            return jsonify({'error': '文件不存在'}), 404
         
         # 生成预览HTML
         html_content = f"""
@@ -971,6 +1137,8 @@ def download_file(file_id):
         file_record, error_response = get_file_record_or_error(file_id)
         if error_response:
             return error_response
+        if not file_record:
+            return jsonify({'error': '文件不存在'}), 404
         
         # 确定文件类型
         filename = file_record['filename']

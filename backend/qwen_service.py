@@ -35,7 +35,20 @@ from openai import OpenAI
 import os
 import json
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any, cast
+from dotenv import load_dotenv
+
+# 确保在独立脚本/测试环境下也能读取 backend/.env
+_env_loaded = False
+try:
+    _backend_dir = os.path.dirname(os.path.abspath(__file__))
+    _env_path = os.path.join(_backend_dir, '.env')
+    if os.path.exists(_env_path):
+        load_dotenv(_env_path, override=False)
+        _env_loaded = True
+except Exception:
+    # 静默失败，不影响后续从系统环境读取
+    _env_loaded = False
 
 class QwenAnalysisService:
     """
@@ -75,6 +88,14 @@ class QwenAnalysisService:
         )
         # 使用的模型版本，可根据需要调整
         self.model = "qwen-plus-2025-04-28"
+        # 默认大模型提供方（仅作为可选属性，不改变现有行为）
+        self.default_provider = os.getenv("LLM_PROVIDER", "qwen").lower()
+
+        # 豆包（字节方舟 Ark）默认配置（不影响现有流程）
+        self.ark_base_url = os.getenv("ARK_BASE_URL", "https://ark.cn-beijing.volces.com/api/v3")
+        # 模型ID优先取环境变量，若未配置则回退到示例模型名
+        # 如您有专属推理接入点ID（UUID），请设置 DOUBAO_MODEL_ID=您的接入点ID
+        self.doubao_model_id = os.getenv("DOUBAO_MODEL_ID", "doubao-seed-1-6-250615")
     
     def analyze_tender_document(self, content: str) -> Dict:
         """
@@ -147,7 +168,7 @@ class QwenAnalysisService:
         """
         
         try:
-            # 调用Qwen API进行分析
+            # 调用Qwen API进行分析（保持原有默认行为不变）
             response = self._call_qwen_api(prompt)
             # 解析并返回结构化结果
             return self._parse_tender_response(response)
@@ -262,7 +283,7 @@ class QwenAnalysisService:
         """
         
         try:
-            # 调用Qwen API进行分析
+            # 调用Qwen API进行分析（保持原有默认行为不变）
             response = self._call_qwen_api(prompt)
             # 解析并返回结构化结果
             return self._parse_bid_response(response)
@@ -309,18 +330,200 @@ class QwenAnalysisService:
             - 非流式调用确保获得完整的结构化响应
         """
         # 构建符合OpenAI格式的消息列表
-        messages = [{"role": "user", "content": prompt}]
-        
-        # 调用阿里云百炼API
+        messages: List[Dict[str, Any]] = [{"role": "user", "content": prompt}]
+        # 调用阿里云百炼API（作类型转换，满足SDK类型定义）
         completion = self.client.chat.completions.create(
-            model=self.model,           # 指定使用的模型
-            messages=messages,          # 对话消息
-            stream=False,               # 非流式响应，获取完整结果
-            temperature=0.3             # 降低随机性，提高一致性
+            model=self.model,
+            messages=cast(Any, messages),
+            stream=False,
+            temperature=0.3,
         )
         
         # 提取并返回响应内容
-        return completion.choices[0].message.content
+        return completion.choices[0].message.content or ""
+
+    def _call_doubao_api(self, prompt: str) -> str:
+        """
+        调用豆包（字节方舟 Ark）API的核心方法
+        ======================================
+
+        与方舟兼容的OpenAI SDK调用方式一致，仅更换base_url与API Key。
+        不改变上游提示词与下游解析逻辑。
+
+        环境变量：
+            - ARK_API_KEY: 方舟平台API Key
+            - ARK_BASE_URL: 可选，自定义方舟API地址（默认华北）
+            - DOUBAO_MODEL_ID: 可选，推理接入点ID或模型名
+        """
+        ark_api_key = os.getenv("ARK_API_KEY")
+        if not ark_api_key:
+            raise ValueError("缺少方舟平台API密钥，请设置环境变量 ARK_API_KEY")
+
+        ark_client = OpenAI(
+            base_url=self.ark_base_url,
+            api_key=ark_api_key,
+        )
+
+        # 与Qwen一致，使用纯文本对话
+        messages: List[Dict[str, Any]] = [{"role": "user", "content": prompt}]
+        completion = ark_client.chat.completions.create(
+            model=self.doubao_model_id,
+            messages=cast(Any, messages),
+            stream=False,
+            temperature=0.3,
+        )
+        # Ark返回结构与OpenAI兼容
+        return completion.choices[0].message.content or ""
+
+    def _call_model_api(self, provider: str, prompt: str) -> str:
+        """
+        模型路由中间层
+        ==============
+
+        根据provider选择调用Qwen或豆包API。上游提示词与下游解析逻辑不变。
+
+        Args:
+            provider (str): "qwen" 或 "doubao"（别名：ali/dashscope、ark/volc）
+            prompt (str): 传入的提示词（保持不变）
+
+        Returns:
+            str: 模型原始响应文本
+        """
+        key = (provider or "qwen").lower()
+        if key in ("qwen", "ali", "dashscope"):
+            return self._call_qwen_api(prompt)
+        if key in ("doubao", "ark", "volc", "volcengine"):
+            return self._call_doubao_api(prompt)
+        # 未知提供方时回退到Qwen
+        return self._call_qwen_api(prompt)
+
+    # 新增：带模型选择的分析方法（保持原有方法不变，便于后续选择）
+    def analyze_tender_document_with_model(self, content: str, provider: str = "qwen") -> Dict:
+        """
+        分析招标文件（可选择模型提供方）
+        保持提示词与解析逻辑一致，仅切换底层模型调用。
+        """
+        prompt = f"""
+        请分析以下招标文件内容，提取出所有可能导致投标无效的条款（废标条款）。
+        
+        招标文件内容：
+        {content}
+        
+        请按照以下JSON格式返回分析结果：
+        {{
+            "summary": "招标文件分析摘要",
+            "invalid_items": [
+                {{
+                    "category": "条款类别（如：资质要求、技术要求、商务要求等）",
+                    "description": "具体的废标条款描述",
+                    "requirement": "具体要求内容",
+                    "severity": "严重程度（高/中/低）",
+                    "keywords": ["关键词1", "关键词2"]
+                }}
+            ],
+            "suggestions": [
+                "投标建议1",
+                "投标建议2"
+            ]
+        }}
+        
+        重点关注以下方面：
+        1. 资质要求（营业执照、资质证书、业绩要求等）
+        2. 技术要求（技术规格、性能指标、标准符合性等）
+        3. 商务要求（价格、付款方式、交期要求等）
+        4. 格式要求（文件格式、签名盖章、装订要求等）
+        5. 时间要求（投标截止时间、有效期等）
+        6. 其他可能导致废标的条款
+        
+        请确保返回的是有效的JSON格式。
+        """
+
+        try:
+            response = self._call_model_api(provider, prompt)
+            return self._parse_tender_response(response)
+        except Exception as e:
+            return {
+                "summary": f"分析过程中出现错误：{str(e)}",
+                "invalid_items": [],
+                "suggestions": ["请检查文件内容或重新尝试分析"],
+            }
+
+    def analyze_bid_document_with_model(self, content: str, tender_analysis: Optional[Dict] = None, provider: str = "qwen") -> Dict:
+        """
+        分析投标文件（可选择模型提供方）
+        保持提示词与解析逻辑一致，仅切换底层模型调用。
+        """
+        base_prompt = f"""
+        请分析以下投标文件内容，检查是否存在可能导致废标的问题。
+        
+        投标文件内容：
+        {content}
+        """
+
+        if tender_analysis and 'invalid_items' in tender_analysis:
+            invalid_items_text = "\n".join([
+                f"- {item.get('category', '未知类别')}: {item.get('description', '')}"
+                for item in tender_analysis['invalid_items']
+            ])
+
+            base_prompt += f"""
+            
+            招标文件中发现的废标条款：
+            {invalid_items_text}
+            
+            请特别关注投标文件是否满足上述要求。
+            """
+
+        prompt = base_prompt + """
+        
+        请按照以下JSON格式返回分析结果：
+        {
+            "summary": "投标文件合规性分析摘要",
+            "compliance_check": {
+                "overall_status": "合规性状态（合规/存在风险/不合规）",
+                "risk_level": "风险等级（低/中/高）",
+                "score": "合规性得分（0-100）"
+            },
+            "issues": [
+                {
+                    "category": "问题类别",
+                    "description": "具体问题描述",
+                    "severity": "严重程度（高/中/低）",
+                    "suggestion": "改进建议",
+                    "location": "问题位置（如果能定位）"
+                }
+            ],
+            "recommendations": [
+                "改进建议1",
+                "改进建议2"
+            ]
+        }
+        
+        检查重点：
+        1. 是否满足资质要求
+        2. 技术规格是否符合要求
+        3. 商务条件是否满足
+        4. 文件格式是否正确
+        5. 是否有遗漏的必要信息
+        6. 签名盖章是否完整
+        
+        请确保返回的是有效的JSON格式。
+        """
+
+        try:
+            response = self._call_model_api(provider, prompt)
+            return self._parse_bid_response(response)
+        except Exception as e:
+            return {
+                "summary": f"分析过程中出现错误：{str(e)}",
+                "compliance_check": {
+                    "overall_status": "未知",
+                    "risk_level": "未知",
+                    "score": 0,
+                },
+                "issues": [],
+                "recommendations": ["请检查文件内容或重新尝试分析"],
+            }
     
     def _parse_tender_response(self, response: str) -> Dict:
         """
@@ -346,25 +549,35 @@ class QwenAnalysisService:
             - 提取关键信息构建默认结构
             - 确保返回结果符合预期格式
         """
+        # 优先尝试严格JSON解析
         try:
-            # 策略1：尝试直接解析JSON
-            return json.loads(response)
+            parsed = json.loads(response)
+            return self._normalize_tender_result(parsed)
         except json.JSONDecodeError:
-            # 策略2：使用正则表达式提取JSON部分
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
-            if json_match:
-                try:
-                    return json.loads(json_match.group())
-                except json.JSONDecodeError:
-                    pass
-            
-            # 策略3：解析失败时的兜底方案
-            # 使用文本解析提取关键信息
-            return {
-                "summary": "解析响应时出现错误，但分析已完成",
-                "invalid_items": self._extract_invalid_items_from_text(response),
-                "suggestions": self._extract_suggestions_from_text(response)
-            }
+            pass
+
+        # 尝试从所有 ```json 代码块中提取，优先取最后一个
+        for fenced in reversed(self._extract_all_fenced_json(response)):
+            try:
+                parsed = json.loads(fenced)
+                return self._normalize_tender_result(parsed)
+            except json.JSONDecodeError:
+                continue
+
+        # 使用平衡括号提取所有JSON对象，优先取最后一个
+        for balanced in reversed(self._extract_all_balanced_json_objects(response)):
+            try:
+                parsed = json.loads(balanced)
+                return self._normalize_tender_result(parsed)
+            except json.JSONDecodeError:
+                continue
+
+        # 兜底：文本启发式提取（避免把模板/JSON属性当作条款）
+        return {
+            "summary": "解析响应时出现错误，但分析已完成",
+            "invalid_items": self._extract_invalid_items_from_text(response),
+            "suggestions": self._extract_suggestions_from_text(response),
+        }
     
     def _parse_bid_response(self, response: str) -> Dict:
         """
@@ -391,28 +604,198 @@ class QwenAnalysisService:
             - 得分：50分（中等水平）
         """
         try:
-            # 策略1：尝试直接解析JSON
-            return json.loads(response)
+            parsed = json.loads(response)
+            return self._normalize_bid_result(parsed)
         except json.JSONDecodeError:
-            # 策略2：使用正则表达式提取JSON部分
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
-            if json_match:
-                try:
-                    return json.loads(json_match.group())
-                except json.JSONDecodeError:
-                    pass
-            
-            # 策略3：解析失败时的兜底方案
-            return {
-                "summary": "解析响应时出现错误，但分析已完成",
-                "compliance_check": {
-                    "overall_status": "需要人工审核",
-                    "risk_level": "中",
-                    "score": 50
-                },
-                "issues": self._extract_issues_from_text(response),
-                "recommendations": self._extract_suggestions_from_text(response)
-            }
+            pass
+
+        for fenced in reversed(self._extract_all_fenced_json(response)):
+            try:
+                parsed = json.loads(fenced)
+                return self._normalize_bid_result(parsed)
+            except json.JSONDecodeError:
+                continue
+
+        for balanced in reversed(self._extract_all_balanced_json_objects(response)):
+            try:
+                parsed = json.loads(balanced)
+                return self._normalize_bid_result(parsed)
+            except json.JSONDecodeError:
+                continue
+
+        return {
+            "summary": "解析响应时出现错误，但分析已完成",
+            "compliance_check": {
+                "overall_status": "需要人工审核",
+                "risk_level": "中",
+                "score": 50,
+            },
+            "issues": self._extract_issues_from_text(response),
+            "recommendations": self._extract_suggestions_from_text(response),
+        }
+
+    def _extract_json_from_fence(self, text: str) -> Optional[str]:
+        """
+        保留向后兼容：返回首个代码块。
+        """
+        blocks = self._extract_all_fenced_json(text)
+        return blocks[0] if blocks else None
+
+    def _extract_all_fenced_json(self, text: str) -> List[str]:
+        """
+        提取所有 ```json ... ``` 或 ``` ... ``` 代码块内部文本，按出现顺序返回列表。
+        """
+        results: List[str] = []
+        fence_patterns = [
+            r"```json\s*(.*?)```",
+            r"```\s*(.*?)```",
+        ]
+        for pat in fence_patterns:
+            for m in re.finditer(pat, text, re.DOTALL | re.IGNORECASE):
+                body = m.group(1).strip()
+                if body:
+                    results.append(body)
+        return results
+
+    def _extract_first_balanced_json(self, text: str) -> Optional[str]:
+        """
+        保留向后兼容：返回首个对象。
+        """
+        objs = self._extract_all_balanced_json_objects(text)
+        return objs[0] if objs else None
+
+    def _extract_all_balanced_json_objects(self, text: str) -> List[str]:
+        """
+        扫描文本，提取所有顶层平衡的大括号JSON对象（忽略字符串中的括号）。
+        按出现顺序返回列表。
+        """
+        results: List[str] = []
+        start_idx = None
+        depth = 0
+        in_string = False
+        escape = False
+        for i, ch in enumerate(text):
+            if in_string:
+                if escape:
+                    escape = False
+                elif ch == '\\':
+                    escape = True
+                elif ch == '"':
+                    in_string = False
+                continue
+            else:
+                if ch == '"':
+                    in_string = True
+                    continue
+                if ch == '{':
+                    if depth == 0:
+                        start_idx = i
+                    depth += 1
+                elif ch == '}':
+                    if depth > 0:
+                        depth -= 1
+                        if depth == 0 and start_idx is not None:
+                            results.append(text[start_idx:i+1])
+                            start_idx = None
+        return results
+
+    def _normalize_tender_result(self, data: Dict) -> Dict:
+        """
+        归一化招标分析结果结构，确保字段类型与键存在。
+        """
+        result: Dict = {}
+        result["summary"] = str(data.get("summary", "")).strip()
+
+        items = data.get("invalid_items", [])
+        if isinstance(items, dict):
+            items = [items]
+        if not isinstance(items, list):
+            items = []
+        norm_items: List[Dict] = []
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            norm_items.append({
+                "category": str(it.get("category", "")).strip() or "未分类",
+                "description": str(it.get("description", "")).strip(),
+                "requirement": str(it.get("requirement", "")).strip(),
+                "severity": str(it.get("severity", "")).strip() or "中",
+                "keywords": it.get("keywords", []) if isinstance(it.get("keywords", []), list) else [],
+            })
+        result["invalid_items"] = norm_items
+
+        suggestions = data.get("suggestions", [])
+        if isinstance(suggestions, str):
+            suggestions = [suggestions]
+        elif isinstance(suggestions, list):
+            # 若为对象列表，尽可能取text字段或转为字符串
+            tmp = []
+            for s in suggestions:
+                if isinstance(s, str):
+                    tmp.append(s)
+                elif isinstance(s, dict):
+                    val = s.get("text") or s.get("suggestion") or ""
+                    if val:
+                        tmp.append(str(val))
+            if tmp:
+                suggestions = tmp
+        else:
+            suggestions = []
+        result["suggestions"] = suggestions
+        return result
+
+    def _normalize_bid_result(self, data: Dict) -> Dict:
+        """
+        归一化投标分析结果结构。
+        """
+        result: Dict = {}
+        result["summary"] = str(data.get("summary", "")).strip()
+
+        cc = data.get("compliance_check", {})
+        if not isinstance(cc, dict):
+            cc = {}
+        result["compliance_check"] = {
+            "overall_status": str(cc.get("overall_status", "需要人工审核") or "需要人工审核"),
+            "risk_level": str(cc.get("risk_level", "中") or "中"),
+            "score": int(cc.get("score", 50) or 50),
+        }
+
+        issues = data.get("issues", [])
+        if isinstance(issues, dict):
+            issues = [issues]
+        if not isinstance(issues, list):
+            issues = []
+        norm_issues: List[Dict] = []
+        for it in issues:
+            if not isinstance(it, dict):
+                continue
+            norm_issues.append({
+                "category": str(it.get("category", "") or "未分类"),
+                "description": str(it.get("description", "")),
+                "severity": str(it.get("severity", "") or "中"),
+                "suggestion": str(it.get("suggestion", "")),
+                "location": str(it.get("location", "")),
+            })
+        result["issues"] = norm_issues
+
+        recs = data.get("recommendations", [])
+        if isinstance(recs, str):
+            recs = [recs]
+        elif isinstance(recs, list):
+            tmp = []
+            for r in recs:
+                if isinstance(r, str):
+                    tmp.append(r)
+                elif isinstance(r, dict):
+                    val = r.get("text") or r.get("recommendation") or ""
+                    if val:
+                        tmp.append(str(val))
+            if tmp:
+                recs = tmp
+        else:
+            recs = []
+        result["recommendations"] = recs
+        return result
     
     def _extract_invalid_items_from_text(self, text: str) -> List[Dict]:
         """
@@ -443,9 +826,23 @@ class QwenAnalysisService:
         items = []
         # 按行分割文本
         lines = text.split('\n')
-        
-        # 遍历每行，查找包含废标相关关键词的内容
+
+        def is_likely_json_line(s: str) -> bool:
+            s2 = s.strip()
+            if not s2:
+                return False
+            if s2.startswith(('{', '}', ']', '[')):
+                return True
+            # 典型的 JSON 属性行或模板占位
+            if re.match(r'^"[A-Za-z_][A-Za-z0-9_]*"\s*:', s2):
+                return True
+            if '招标文件分析摘要' in s2 or '投标文件合规性分析摘要' in s2 or 'summary' in s2:
+                return True
+            return False
+
         for line in lines:
+            if is_likely_json_line(line):
+                continue
             if any(keyword in line for keyword in ['废标', '无效', '不符合', '要求']):
                 items.append({
                     "category": "从文本提取",
@@ -454,8 +851,6 @@ class QwenAnalysisService:
                     "severity": "中",
                     "keywords": []
                 })
-        
-        # 限制返回数量，避免过多无效信息
         return items[:10]
     
     def _extract_issues_from_text(self, text: str) -> List[Dict]:
@@ -486,11 +881,23 @@ class QwenAnalysisService:
             - 位置：未定位
         """
         issues = []
-        # 按行分割文本
         lines = text.split('\n')
-        
-        # 遍历每行，查找包含问题相关关键词的内容
+
+        def is_likely_json_line(s: str) -> bool:
+            s2 = s.strip()
+            if not s2:
+                return False
+            if s2.startswith(('{', '}', ']', '[')):
+                return True
+            if re.match(r'^"[A-Za-z_][A-Za-z0-9_]*"\s*:', s2):
+                return True
+            if 'summary' in s2:
+                return True
+            return False
+
         for line in lines:
+            if is_likely_json_line(line):
+                continue
             if any(keyword in line for keyword in ['问题', '缺少', '不完整', '错误']):
                 issues.append({
                     "category": "从文本提取",
@@ -499,8 +906,6 @@ class QwenAnalysisService:
                     "suggestion": "请核实相关内容",
                     "location": "未定位"
                 })
-        
-        # 限制返回数量，避免过多无效信息
         return issues[:10]
     
     def _extract_suggestions_from_text(self, text: str) -> List[str]:
