@@ -430,12 +430,16 @@ class ProjectInfoAgent(BaseAgent):
         
         # 初始化错误列表
         errors = []
+        ai_found_project_info = {}
         
         # 方法1: AI智能检测（主要方法）
-        ai_errors = self._detect_errors_by_ai(content, tender_project_id, tender_project_name)
+        ai_errors, ai_project_info = self._detect_errors_by_ai(content, tender_project_id, tender_project_name)
         if ai_errors:
             errors.extend(ai_errors)
             self.logger.info(f"AI检测发现 {len(ai_errors)} 个错误")
+        
+        # 保存AI检测过程中找到的项目信息
+        ai_found_project_info = ai_project_info
         
         # 方法2: 正则表达式检测（补充方法）
         regex_errors = self._detect_errors_by_regex(content, tender_project_id, tender_project_name)
@@ -443,12 +447,20 @@ class ProjectInfoAgent(BaseAgent):
         # 合并去重错误（避免AI和正则重复检测相同错误）
         merged_errors = self._merge_and_deduplicate_errors(errors, regex_errors)
         
+        # 使用AI检测过程中找到的项目信息，避免重复AI调用
+        bid_info = {
+            "project_id": ai_found_project_info.get("project_id"),
+            "project_name": ai_found_project_info.get("project_name"),
+            "confidence": ai_found_project_info.get("confidence", 0.0)
+        }
+        
         result = {
             "tender_project_id": tender_project_id,
             "tender_project_name": tender_project_name,
             "has_errors": len(merged_errors) > 0,
             "error_count": len(merged_errors),
             "errors": merged_errors,
+            "bid_info": bid_info,
             "detection_methods": {
                 "ai_errors_count": len(ai_errors) if ai_errors else 0,
                 "regex_errors_count": len(regex_errors),
@@ -460,7 +472,7 @@ class ProjectInfoAgent(BaseAgent):
         return result
     
     def _detect_errors_by_ai(self, content: str, tender_project_id: Optional[str], 
-                           tender_project_name: Optional[str]) -> List[Dict[str, Any]]:
+                           tender_project_name: Optional[str]) -> tuple:
         """
         使用AI智能检测项目信息错误
         ===========================
@@ -474,7 +486,7 @@ class ProjectInfoAgent(BaseAgent):
             tender_project_name (Optional[str]): 正确的项目名称
             
         Returns:
-            List[Dict[str, Any]]: AI检测到的错误列表
+            tuple: (错误列表, 找到的项目信息)
         """
         try:
             # 构建AI检测提示词
@@ -483,16 +495,19 @@ class ProjectInfoAgent(BaseAgent):
             # 调用AI分析
             response = self._extract_by_ai_with_retry_for_detection(prompt)
             
-            if response and response.get("errors"):
-                self.logger.info(f"AI检测成功，发现 {len(response['errors'])} 个潜在错误")
-                return response["errors"]
+            if response:
+                errors = response.get("errors", [])
+                found_project_info = response.get("found_project_info", {})
+                
+                self.logger.info(f"AI检测成功，发现 {len(errors)} 个潜在错误")
+                return errors, found_project_info
             else:
                 self.logger.info("AI检测未发现明显错误")
-                return []
+                return [], {}
                 
         except Exception as e:
             self.logger.error(f"AI错误检测失败: {str(e)}")
-            return []
+            return [], {}
     
     def _build_error_detection_prompt(self, content: str, tender_project_id: Optional[str], 
                                     tender_project_name: Optional[str]) -> str:
@@ -527,6 +542,11 @@ class ProjectInfoAgent(BaseAgent):
 
 请为每个发现的错误位置分别报告，不要合并相同的错误。返回JSON格式结果：
 {{
+    "found_project_info": {{
+        "project_id": "在投标文件中找到的项目编号",
+        "project_name": "在投标文件中找到的项目名称",
+        "confidence": 0.95
+    }},
     "errors": [
         {{
             "type": "wrong_project_id" | "wrong_project_name" | "missing_project_id" | "missing_project_name",

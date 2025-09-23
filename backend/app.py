@@ -752,18 +752,8 @@ def check_project_info():
         # 处理检测结果
         detection_data = result['data']
         
-        # 同时提取投标文件的项目信息用于对比显示
-        bid_extract_result = agent_manager.extract_project_info(
-            bid_file['content'], 
-            'bid'
-        )
-        
-        bid_info = {}
-        if bid_extract_result.get('success'):
-            bid_info = {
-                'project_id': bid_extract_result['data'].get('project_id'),
-                'project_name': bid_extract_result['data'].get('project_name')
-            }
+        # 获取从错误检测过程中同时提取的投标文件信息（避免重复AI调用）
+        bid_info = detection_data.get('bid_info', {})
         
         # 整合检测结果
         response_data = {
