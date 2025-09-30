@@ -70,7 +70,7 @@ def read_word_toc_docx(input_path):
 
 def read_word_toc_doc(input_path, record_positions=False):
     """
-    通过COM组件解析.doc文档标题样式，生成目录结构
+    通过COM组件解析.doc文档标题样式，生成目录结构（优先使用WPS接口）
     :param input_path: Word文档路径（.doc格式）
     :param record_positions: 是否记录标题位置信息（用于后续拆分）
     :return: 目录列表，包含{标题文本, 层级, [段落索引, 起始位置]}
@@ -107,9 +107,29 @@ def read_word_toc_doc(input_path, record_positions=False):
         pythoncom.CoInitialize()
         print("✅ COM 初始化成功")
         
-        # 创建Word应用程序对象（带重试）
-        word_app = cast(Any, com_retry(win32com.client.Dispatch, "Word.Application"))
-        print("✅ Word 应用程序创建成功")
+        # 优先尝试WPS，失败则使用Word
+        app_created = False
+        app_type = "未知"
+        
+        # 尝试顺序：WPS -> Word -> EnsureDispatch
+        app_candidates = [
+            ("Kwps.Application", "WPS文字"),
+            ("Word.Application", "Microsoft Word"),
+        ]
+        
+        for app_id, app_name in app_candidates:
+            try:
+                word_app = cast(Any, com_retry(win32com.client.Dispatch, app_id))
+                app_type = app_name
+                print(f"✅ {app_name} 应用程序创建成功")
+                app_created = True
+                break
+            except Exception as e:
+                print(f"   ⚠️ {app_name} 不可用: {e}")
+                continue
+        
+        if not app_created:
+            raise Exception("无法创建任何Office应用程序")
         
         # 不显示Word窗口
         try:
@@ -238,8 +258,8 @@ def read_word_toc(input_path, record_positions=False):
     
     if file_ext == '.docx':
         if record_positions:
-            # 优先尝试COM以记录位置信息；失败则回退到python-docx
-            print("检测到.docx格式，尝试使用COM组件解析并记录位置...")
+            # 优先尝试COM（WPS>Word）以记录位置信息；失败则回退到python-docx
+            print("检测到.docx格式，尝试使用COM组件解析并记录位置（优先WPS）...")
             try:
                 return read_word_toc_doc(input_path, record_positions)
             except Exception as e:
@@ -249,7 +269,7 @@ def read_word_toc(input_path, record_positions=False):
             print("检测到.docx格式，使用python-docx解析...")
             return read_word_toc_docx(input_path)
     elif file_ext == '.doc':
-        print("检测到.doc格式，使用COM组件解析...")
+        print("检测到.doc格式，使用COM组件解析（优先WPS）...")
         return read_word_toc_doc(input_path, record_positions)
     else:
         raise ValueError(f"不支持的文件格式: {file_ext}，仅支持.doc和.docx格式")

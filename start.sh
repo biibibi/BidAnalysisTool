@@ -3,23 +3,18 @@
 echo "Starting BidAnalysis Tool (Python 3.12 preferred)..."
 echo
 
-# Prefer Python 3.12 venv on Unix-like systems if available
-if command -v python3.12 >/dev/null 2>&1; then
-    if [ ! -d ".venv312" ]; then
+# Use existing virtual environment or create new one
+if [ ! -d "venv" ]; then
+    if command -v python3.12 >/dev/null 2>&1; then
         echo "Creating Python 3.12 virtual environment..."
-        python3.12 -m venv .venv312
-    fi
-    # shellcheck disable=SC1091
-    source .venv312/bin/activate
-else
-    # Fallback to default python3
-    if [ ! -d ".venv" ]; then
+        python3.12 -m venv venv
+    else
         echo "Creating virtual environment with system python3..."
-        python3 -m venv .venv
+        python3 -m venv venv
     fi
-    # shellcheck disable=SC1091
-    source .venv/bin/activate
 fi
+# shellcheck disable=SC1091
+source venv/bin/activate
 
 # Install dependencies
 echo "Installing dependencies..."

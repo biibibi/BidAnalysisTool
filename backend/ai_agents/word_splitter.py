@@ -9,6 +9,7 @@ import win32com.client
 import pythoncom
 from typing import List, Dict, Optional, Any
 from pywintypes import com_error as _COM_ERROR
+from .wordtoc_agent import read_positions_from_markdown
 
 def com_retry(callable_obj, *args, max_retries=3, **kwargs):
     """COM操作重试包装器"""
@@ -186,54 +187,83 @@ def split_word_document_enhanced(input_path: str, output_dir: str = None, markdo
         paragraphs = source_doc.Paragraphs
         print(f"📄 文档包含 {paragraphs.Count} 个段落")
         
-        # 识别一级标题（只按主要章节分割）
+        # 尝试从markdown文件读取一级标题位置信息
         titles = []
-        for i in range(1, min(paragraphs.Count + 1, 200)):  # 限制分析范围
-            try:
-                para = paragraphs(i)
-                text = para.Range.Text.strip()
-                
-                if not text or len(text) < 3:  # 提高最小长度要求
-                    continue
-                
-                # 检查是否为一级标题
-                style_name = para.Style.NameLocal.lower()
-                font_size = para.Range.Font.Size
-                
-                # 更严格的一级标题识别规则
-                is_main_title = (
-                    # 样式匹配
-                    ("标题 1" in style_name or "heading 1" in style_name) or
-                    # 字体大小较大
-                    (font_size and font_size >= 16) or
-                    # 明确的一级标题模式
-                    (text.startswith("第") and ("部分" in text or "章" in text or "节" in text)) or
-                    # 常见的文档结构标识
-                    any(pattern in text for pattern in [
-                        "第一部分", "第二部分", "第三部分", "第四部分", "第五部分", 
-                        "第六部分", "第七部分", "第八部分", "第九部分", "第十部分",
-                        "第一章", "第二章", "第三章", "第四章", "第五章",
-                        "第六章", "第七章", "第八章", "第九章", "第十章"
-                    ])
-                )
-                
-                # 排除明显的二级、三级标题
-                is_sub_title = (
-                    text.count('.') >= 2 or  # 如 "1.1.1"
-                    len([c for c in text if c.isdigit()]) >= 3 or  # 多个数字
-                    any(sub_pattern in text for sub_pattern in ["1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.", "9."])
-                )
-                
-                if is_main_title and not is_sub_title:
-                    titles.append({
-                        'title': text,
-                        'para_index': i,
-                        'font_size': font_size or 12
-                    })
-                    print(f"   📋 [一级标题 {len(titles)}] {text}")
+        if markdown_path and os.path.exists(markdown_path):
+            print(f"📋 尝试从markdown文件读取标题位置: {os.path.basename(markdown_path)}")
+            positions = read_positions_from_markdown(markdown_path)
+            if positions:
+                print(f"✅ 从markdown文件读取到 {len(positions)} 个一级标题位置")
+                for pos_info in positions:
+                    try:
+                        para_idx = pos_info.get('para_idx')
+                        title_text = pos_info.get('title', '')
+                        start_pos = pos_info.get('start_pos')
+                        
+                        if para_idx and title_text:
+                            titles.append({
+                                'title': title_text,
+                                'para_index': para_idx,
+                                'start_pos': start_pos,
+                                'font_size': 16  # 默认字体大小
+                            })
+                            print(f"   📋 [markdown标题 {len(titles)}] {title_text}")
+                    except Exception as e:
+                        print(f"   ⚠️ 处理位置信息失败: {e}")
+                        continue
+            else:
+                print("⚠️ markdown文件中没有找到位置信息，将使用文档扫描方式")
+        
+        # 如果没有从markdown获取到标题信息，使用原有的扫描方式
+        if not titles:
+            print("🔍 使用文档扫描方式识别一级标题...")
+            # 识别一级标题（只按主要章节分割）
+            for i in range(1, min(paragraphs.Count + 1, 200)):  # 限制分析范围
+                try:
+                    para = paragraphs(i)
+                    text = para.Range.Text.strip()
                     
-            except Exception:
-                continue
+                    if not text or len(text) < 3:  # 提高最小长度要求
+                        continue
+                    
+                    # 检查是否为一级标题
+                    style_name = para.Style.NameLocal.lower()
+                    font_size = para.Range.Font.Size
+                    
+                    # 更严格的一级标题识别规则
+                    is_main_title = (
+                        # 样式匹配
+                        ("标题 1" in style_name or "heading 1" in style_name) or
+                        # 字体大小较大
+                        (font_size and font_size >= 16) or
+                        # 明确的一级标题模式
+                        (text.startswith("第") and ("部分" in text or "章" in text or "节" in text)) or
+                        # 常见的文档结构标识
+                        any(pattern in text for pattern in [
+                            "第一部分", "第二部分", "第三部分", "第四部分", "第五部分", 
+                            "第六部分", "第七部分", "第八部分", "第九部分", "第十部分",
+                            "第一章", "第二章", "第三章", "第四章", "第五章",
+                            "第六章", "第七章", "第八章", "第九章", "第十章"
+                        ])
+                    )
+                    
+                    # 排除明显的二级、三级标题
+                    is_sub_title = (
+                        text.count('.') >= 2 or  # 如 "1.1.1"
+                        len([c for c in text if c.isdigit()]) >= 3 or  # 多个数字
+                        any(sub_pattern in text for sub_pattern in ["1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.", "9."])
+                    )
+                    
+                    if is_main_title and not is_sub_title:
+                        titles.append({
+                            'title': text,
+                            'para_index': i,
+                            'font_size': font_size or 12
+                        })
+                        print(f"   📋 [一级标题 {len(titles)}] {text}")
+                        
+                except Exception:
+                    continue
         
         print(f"✅ 识别出 {len(titles)} 个一级标题")
         

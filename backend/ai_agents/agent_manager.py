@@ -27,6 +27,8 @@ from typing import Dict, Any, Optional, List
 import logging
 from .base_agent import BaseAgent
 from .project_info_agent import ProjectInfoAgent
+from .image_extraction_agent import WordImageExtractionAgent
+from .authorization_letter_agent import AuthorizationLetterAgent
 
 class AgentManager:
     """
@@ -61,6 +63,12 @@ class AgentManager:
             # 注册项目信息Agent
             project_agent = ProjectInfoAgent()
             self.register_agent(project_agent)
+
+            image_agent = WordImageExtractionAgent()
+            self.register_agent(image_agent)
+
+            authorization_agent = AuthorizationLetterAgent()
+            self.register_agent(authorization_agent)
             
             self.logger.info("内置Agent注册完成")
             
@@ -179,18 +187,30 @@ class AgentManager:
                 "agent_name": agent_name
             }
     
-    def extract_project_info(self, content: str, document_type: str = "auto") -> Dict[str, Any]:
+    def extract_project_info(
+        self,
+        content: str,
+        document_type: str = "auto",
+        file_id: Optional[str] = None,
+        extra_context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         提取项目信息的便捷方法
         
         Args:
             content (str): 文档内容
             document_type (str): 文档类型 ("tender", "bid", "auto")
+            file_id (Optional[str]): 对应文件的数据库ID
+            extra_context (Optional[Dict[str, Any]]): 额外的上下文信息
             
         Returns:
             Dict[str, Any]: 项目信息提取结果
         """
-        context = {"document_type": document_type}
+        context: Dict[str, Any] = {"document_type": document_type}
+        if extra_context:
+            context.update(extra_context)
+        if file_id:
+            context["file_id"] = file_id
         return self.process_with_agent("ProjectInfoAgent", content, context)
     
     def match_project_info(self, bid_content: str, tender_info: Dict[str, Any]) -> Dict[str, Any]:

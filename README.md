@@ -407,7 +407,8 @@ BidAnalysisTool/
 │       ├── document_processor.py # 文档处理协调器
 │       ├── project_info_agent.py # 项目信息提取代理
 │       ├── word_splitter.py   # Word文档拆分代理
-│       ├── word_image_separator.py # 图像分离代理
+│       ├── image_extraction_agent.py # 图片抽取与AI命名代理（替代原 word_image_separator.py）
+│       ├── authorization_letter_agent.py # 授权委托书一致性核验代理
 │       └── wordtoc_agent.py   # 目录提取代理
 ├── frontend/                  # 前端界面
 │   ├── index.html            # 招标文件分析页面
@@ -456,7 +457,8 @@ BidAnalysisTool/
   - `DocumentProcessor`: 文档处理协调器，统一管理处理工作流程
   - `ProjectInfoAgent`: 项目信息提取和匹配专用代理
   - `WordSplitterAgent`: Word文档智能拆分代理
-  - `WordImageSeparatorAgent`: 图像分离和重命名代理
+    - `WordImageExtractionAgent`: 图片抽取、AI命名、可选OCR代理
+    - `AuthorizationLetterAgent`: 授权委托书项目编号/名称一致性核验
   - `WordTOCAgent`: 目录提取和结构化代理
   - `BaseAgent`: 通用代理基础类，支持扩展
   - `AgentManager`: 代理统一管理和调度器

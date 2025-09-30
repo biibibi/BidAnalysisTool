@@ -15,6 +15,19 @@ from typing import Dict, Any, Optional, List
 # 计算 backend 目录路径供后续按路径导入备用
 backend_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+try:
+    from database import DatabaseManager
+except ImportError:
+    import importlib.util
+    db_path = os.path.join(backend_path, 'database.py')
+    spec = importlib.util.spec_from_file_location("database", db_path)
+    if spec and spec.loader:
+        db_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(db_module)
+        DatabaseManager = db_module.DatabaseManager  # type: ignore
+    else:
+        DatabaseManager = None  # type: ignore
+
 from .base_agent import BaseAgent
 
 class ProjectInfoAgent(BaseAgent):
@@ -35,6 +48,8 @@ class ProjectInfoAgent(BaseAgent):
             name="ProjectInfoAgent",
             description="AI优先的项目编号和项目名称提取及错误检查专家"
         )
+
+        self.db_manager = DatabaseManager() if DatabaseManager else None
         
         # 项目编号的正则表达式模式
         self.project_id_patterns = [
@@ -81,6 +96,7 @@ class ProjectInfoAgent(BaseAgent):
             
             if doc_type == "tender":
                 result = self._extract_tender_info(content)
+                self._persist_project_info(context, result)
                 return self.create_success_result(result, "招标文件项目信息提取完成")
             elif doc_type == "bid":
                 # 检查是否需要进行错误检测
@@ -153,6 +169,32 @@ class ProjectInfoAgent(BaseAgent):
             "confidence": confidence,
             "ai_priority_strategy": True
         }
+
+    def _persist_project_info(self, context: Optional[Dict[str, Any]], result: Dict[str, Any]):
+        """将提取到的项目信息同步到数据库中"""
+        if not self.db_manager or not context or not result:
+            return
+
+        doc_type = (context.get("document_type") or "").lower()
+        if doc_type != "tender":
+            return
+
+        file_id = context.get("file_id")
+        if not file_id:
+            return
+
+        project_id = result.get("project_id")
+        project_name = result.get("project_name")
+
+        if not project_id and not project_name:
+            return
+
+        try:
+            updated = self.db_manager.update_tender_project_info(file_id, project_id, project_name)
+            if not updated:
+                self.logger.debug(f"未找到需要更新的招标分析记录，file_id={file_id}")
+        except Exception as e:
+            self.logger.error(f"项目信息写入数据库失败: {str(e)}")
     
     def _extract_by_ai_with_retry(self, content: str, doc_type: str, max_retries: int = 2) -> Dict[str, Any]:
         """AI提取（带重试机制）"""

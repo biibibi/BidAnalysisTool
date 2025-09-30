@@ -87,7 +87,7 @@ class QwenAnalysisService:
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
         # 使用的模型版本，可根据需要调整
-        self.model = "qwen-plus-2025-04-28"
+        self.model = "qwen3-max"
         # 默认大模型提供方（仅作为可选属性，不改变现有行为）
         self.default_provider = os.getenv("LLM_PROVIDER", "qwen").lower()
 

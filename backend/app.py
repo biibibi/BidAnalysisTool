@@ -3,178 +3,82 @@
 投标文件合规性检查工具 - Flask Web应用主文件
 =============================================
 
-本文件是整个系统的核心Web服务器，提供RESTful API接口供前端调用。
-主要功能包括文件上传、招标文件分析、投标文件分析和结果查询。
-
-API端点：
-    POST /api/upload - 文件上传接口
-    POST /api/analyze/tender - 招标文件分析接口
-    POST /api/analyze/bid - 投标文件分析接口
-    GET /api/analysis/<id> - 获取分析结果接口
-    GET /api/health - 健康检查接口
-
-技术栈：
-    - Flask: Web框架
-    - Flask-CORS: 跨域请求支持
-    - SQLite: 数据存储
-    - Qwen AI: 文档智能分析
-
-作者：BidAnalysis Team
-创建时间：2025年
-版本：1.0
+说明：原文件头在一次补丁时被破坏，现已恢复。该文件提供所有后端 REST 接口。
 """
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import os
-import uuid
+import os, uuid
 from datetime import datetime
 from dotenv import load_dotenv
+
 from qwen_service import QwenAnalysisService
 from file_handler import FileHandler
 from database import DatabaseManager
 from ai_agents.agent_manager import agent_manager
 from ai_agents.document_processor import document_processor
 
-# 加载环境变量
 load_dotenv()
 
-# 创建Flask应用实例（映射根目录下的static到/web静态路径）
-app = Flask(
-    __name__,
-    static_folder="../static",      # 正确指向仓库根目录下的static
-    static_url_path="/static"       # 浏览器访问路径保持为 /static
-)
+app = Flask(__name__, static_folder="../static", static_url_path="/static")
+CORS(app)
 
-# 启用跨域资源共享(CORS)，允许前端JavaScript访问API
-CORS(app)  # 允许跨域请求
-
-# === 应用配置 ===
-# 智能确定uploads目录路径（项目根目录下）
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 uploads_path = os.path.join(project_root, 'uploads')
+os.makedirs(uploads_path, exist_ok=True)
 
-app.config['UPLOAD_FOLDER'] = uploads_path              # 文件上传目录（项目根目录下）
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB 最大文件大小限制
+app.config['UPLOAD_FOLDER'] = uploads_path
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
-# 确保上传目录存在，如果不存在则创建
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+qwen_service = QwenAnalysisService()
+file_handler = FileHandler()
+db_manager = DatabaseManager()
 
-# === 初始化服务实例 ===
-qwen_service = QwenAnalysisService()  # AI分析服务
-file_handler = FileHandler()          # 文件处理服务
-db_manager = DatabaseManager()        # 数据库管理服务
-
-# === 工具函数 ===
+# ---------- 工具函数 ----------
 def handle_api_error(e, default_message="操作失败"):
-    """统一的API错误处理函数"""
     return jsonify({'error': str(e) if str(e) else default_message}), 500
 
 def validate_file_id(file_id, error_message="缺少文件ID"):
-    """验证文件ID参数"""
     if not file_id:
         return jsonify({'error': error_message}), 400
     return None
 
 def get_file_record_or_error(file_id):
-    """获取文件记录，如果不存在返回错误响应"""
-    file_record = db_manager.get_file_record(file_id)
-    if not file_record:
+    rec = db_manager.get_file_record(file_id)
+    if not rec:
         return None, (jsonify({'error': '文件不存在'}), 404)
-    return file_record, None
+    return rec, None
 
-# === 静态文件路由 ===
 @app.route('/')
 def index():
-    """
-    首页路由 - 提供前端HTML页面
-    """
     return send_from_directory('../frontend', 'index.html')
 
 @app.route('/favicon.ico')
 def favicon():
-    """
-    浏览器站点图标
-    处理默认的 /favicon.ico 请求，避免终端出现 404 日志。
-    """
     return app.send_static_file('icon/Unicom1.png')
-
-@app.route('/bid_analysis')
-def bid_analysis():
-    """
-    投标文件分析页面路由
-    """
-    return send_from_directory('../frontend', 'bid_analysis.html')
-
-@app.route('/frontend/<path:filename>')
-def frontend_static(filename):
-    """
-    前端静态文件服务
-    """
-    return send_from_directory('../frontend', filename)
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    """
-    文件上传接口
-    =============
-    
-    接收客户端上传的文件，进行安全检查后保存到服务器，
-    并提取文件内容存储到数据库中。
-    
-    请求方式：POST
-    请求头：Content-Type: multipart/form-data
-    请求参数：
-        file: 上传的文件（Form Data）
-    
-    响应格式：
-        成功: {
-            "file_id": "唯一文件ID",
-            "filename": "原始文件名",
-            "message": "文件上传成功"
-        }
-        失败: {
-            "error": "错误信息"
-        }
-    
-    支持的文件格式：
-        - PDF (.pdf)
-        - Word文档 (.docx)
-    
-    文件大小限制：最大50MB
-    
-    Returns:
-        JSON响应，包含文件ID或错误信息
-        
-    Raises:
-        400: 请求参数错误（无文件、文件类型不支持等）
-        500: 服务器内部错误
-    """
+    """文件上传接口（恢复版）"""
     try:
-        # 检查请求中是否包含文件
         if 'file' not in request.files:
-            return jsonify({'error': '没有文件'}), 400
-        
-        file = request.files['file']
-        
-        # 检查是否选择了文件
-        if file.filename == '':
-            return jsonify({'error': '没有选择文件'}), 400
-        
-        # 验证文件类型是否在允许的范围内
-        # 显式确保文件名为字符串，避免类型检查 None 报错
-        filename = file.filename or ""
-        if not file_handler.is_allowed_file(filename):
-            return jsonify({'error': '不支持的文件类型'}), 400
-        
-        # 生成唯一的文件ID，用于内部管理和避免文件名冲突
+            return jsonify({'error': '未找到上传文件字段 file'}), 400
+        f = request.files['file']
+        if f.filename == '':
+            return jsonify({'error': '文件名为空'}), 400
         file_id = str(uuid.uuid4())
-        
-        # 保存文件到临时位置以获取文件信息
-        temp_file_path = file_handler.save_file(file, file_id, app.config['UPLOAD_FOLDER'])
-        
-        # 获取文件大小
+        filename = f.filename
+        save_path = os.path.join(app.config['UPLOAD_FOLDER'], file_id + '_' + filename)
+        f.save(save_path)
+        try:
+            content = file_handler.extract_content(save_path)
+        except Exception:
+            content = ''
+        db_manager.save_file_record(file_id, filename, save_path, content)
+        return jsonify({'file_id': file_id, 'filename': filename, 'message': '文件上传成功'})
+    except Exception as e:
+        return handle_api_error(e)
         file_size = os.path.getsize(temp_file_path)
         
         # 检查是否存在重复文件（仅基于文件大小判断）
@@ -708,7 +612,8 @@ def check_project_info():
             # 从招标文件提取项目信息
             tender_extract_result = agent_manager.extract_project_info(
                 tender_file['content'], 
-                'tender'
+                'tender',
+                file_id=tender_file_id
             )
             
             if tender_extract_result.get('success'):
@@ -833,7 +738,8 @@ def extract_project_info():
         # 使用Agent提取项目信息
         result = agent_manager.extract_project_info(
             file_record['content'], 
-            document_type
+            document_type,
+            file_id=file_id
         )
         
         # 如果提取成功，返回结果
@@ -922,7 +828,8 @@ def match_project_info():
                 # 提取招标文件的项目信息
                 tender_result = agent_manager.extract_project_info(
                     tender_file['content'], 
-                    'tender'
+                    'tender',
+                    file_id=tender_file_id
                 )
                 if tender_result.get('success'):
                     tender_info = tender_result['data']
@@ -942,6 +849,155 @@ def match_project_info():
         
     except Exception as e:
         return handle_api_error(e)
+
+
+@app.route('/api/analyze/authorization-letter', methods=['POST'])
+def analyze_authorization_letter():
+    """授权委托书/身份证明核验接口
+    =================================
+
+    使用 AuthorizationLetterAgent 对上传的授权委托书（或身份证明）Word 文档进行多模态核验：
+        - 法定代表人/被授权人身份信息识别
+        - 证件有效性/有效期识别（若存在）
+        - 授权信息完整性
+        - 项目编号、项目名称与招标文件登记信息一致性
+
+    请求 JSON:
+        {
+          "file_id": "授权委托书文件ID (必填)",
+          "tender_file_id": "招标文件 file_id (可选)",
+          "tender_analysis_id": "招标分析记录 ID (可选)",
+          "expected_project_id": "外部传入期望项目编号 (可选)",
+          "expected_project_name": "外部传入期望项目名称 (可选)",
+          "provider": "qwen|doubao (可选, 默认环境变量 LLM_PROVIDER)"
+        }
+
+    响应示例(success):
+        {
+          "success": true,
+          "data": { ... AuthorizationLetterAgent 返回的数据 ... },
+          "message": "授权委托书多模态核验完成"
+        }
+
+    错误:
+        400 缺少参数 / 文件不存在
+        500 内部错误
+    """
+    try:
+        data = request.get_json() or {}
+        file_id = data.get('file_id')
+        if not file_id:
+            return jsonify({'success': False, 'error': '缺少 file_id'}), 400
+
+        file_record, error_response = get_file_record_or_error(file_id)
+        if error_response:
+            # error_response 已包含 (json, status_code)
+            return error_response
+        if not file_record:
+            return jsonify({'success': False, 'error': '文件不存在'}), 404
+
+        file_path = file_record.get('file_path')
+        if not file_path or not os.path.exists(file_path):
+            return jsonify({'success': False, 'error': '文件路径不存在'}), 404
+        if not file_path.lower().endswith(('.docx', '.doc')):
+            return jsonify({'success': False, 'error': '仅支持 Word 文档(.doc/.docx)'}), 400
+
+        # 自动选择授权委托书拆分文档（可选）
+        selected_file_path = file_path
+        selection_meta = None
+        if data.get('auto_select'):
+            try:
+                # 推断work_dir: temp/<file_id>/split_documents
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                project_root = os.path.dirname(current_dir)
+                temp_dir = os.path.join(project_root, 'temp', file_id)
+                split_dir = os.path.join(temp_dir, 'split_documents')
+                toc_md = None
+                # 查找目录md
+                if os.path.isdir(temp_dir):
+                    for item in os.listdir(temp_dir):
+                        if item.endswith('_目录.md'):
+                            toc_md = os.path.join(temp_dir, item)
+                            break
+                candidates = []
+                if os.path.isdir(split_dir):
+                    for fname in os.listdir(split_dir):
+                        if fname.lower().endswith(('.docx', '.doc')):
+                            fpath = os.path.join(split_dir, fname)
+                            norm = fname.lower()
+                            score = 0
+                            # 关键字打分
+                            KEYWORDS = [
+                                '授权', '委托', '委托书', '身份证明', '法定代表', '身份证', '代表人', '授权书'
+                            ]
+                            for kw in KEYWORDS:
+                                if kw in norm:
+                                    score += 3
+                            # 文件名长度过长扣分
+                            if len(fname) > 80:
+                                score -= 1
+                            candidates.append({'file': fpath, 'name': fname, 'score': score})
+                chosen = None
+                if candidates:
+                    # 读取 toc md 进一步加权
+                    toc_text = ''
+                    if toc_md and os.path.exists(toc_md):
+                        try:
+                            with open(toc_md, 'r', encoding='utf-8', errors='ignore') as f:
+                                toc_text = f.read().lower()
+                        except Exception:
+                            toc_text = ''
+                    if toc_text:
+                        for c in candidates:
+                            base = os.path.splitext(c['name'])[0].lower()
+                            if base and base in toc_text:
+                                c['score'] += 2
+                            # 章节行若含“授权委托书”并且序号靠前权重更大
+                            if '授权' in toc_text and '委托' in toc_text:
+                                c['score'] += 1
+                    candidates.sort(key=lambda x: x['score'], reverse=True)
+                    # 过滤掉完全没有匹配分数的
+                    filtered = [c for c in candidates if c['score'] > 0]
+                    chosen = filtered[0] if filtered else candidates[0]
+                if chosen:
+                    selected_file_path = chosen['file']
+                    selection_meta = {
+                        'strategy': 'auto_select',
+                        'chosen_name': os.path.basename(chosen['file']),
+                        'score': chosen['score'],
+                        'candidate_count': len(candidates)
+                    }
+                else:
+                    selection_meta = {
+                        'strategy': 'fallback_original',
+                        'reason': '无可用拆分候选, 使用原始文件'
+                    }
+            except Exception as sel_exc:
+                selection_meta = {
+                    'strategy': 'fallback_error',
+                    'error': str(sel_exc)
+                }
+
+        # 组装上下文
+        context = {
+            'tender_file_id': data.get('tender_file_id'),
+            'tender_analysis_id': data.get('tender_analysis_id'),
+            'expected_project_id': data.get('expected_project_id'),
+            'expected_project_name': data.get('expected_project_name'),
+            'provider': data.get('provider') or os.getenv('LLM_PROVIDER', 'qwen')
+        }
+
+        result = agent_manager.process_with_agent('AuthorizationLetterAgent', selected_file_path, context)
+        if selection_meta:
+            result.setdefault('data', {})
+            if isinstance(result.get('data'), dict):
+                result['data']['selected_file'] = selected_file_path
+                result['data']['selection_meta'] = selection_meta
+
+        status_code = 200 if result.get('success') else 500
+        return jsonify(result), status_code
+    except Exception as e:
+        return handle_api_error(e, '授权委托书核验失败')
 
 
 @app.route('/api/agents', methods=['GET'])

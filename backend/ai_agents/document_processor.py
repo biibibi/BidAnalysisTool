@@ -10,6 +10,7 @@ import shutil
 from typing import Dict, Any, Optional, Callable
 from .wordtoc_agent import read_word_toc, generate_markdown_toc
 from .word_splitter import split_word_document_stable
+from .image_extraction_agent import WordImageExtractionAgent
 
 
 class DocumentProcessor:
@@ -30,6 +31,7 @@ class DocumentProcessor:
         
         self.temp_base_dir = temp_base_dir
         os.makedirs(self.temp_base_dir, exist_ok=True)
+        self.image_agent = WordImageExtractionAgent()
     
     def process_bid_document(self, file_path: str, file_id: str, progress_callback: Optional[Callable[[int, int, str], None]] = None) -> Dict[str, Any]:
         """
@@ -66,6 +68,8 @@ class DocumentProcessor:
             
             if progress_callback:
                 progress_callback(90, 100, "文档拆分完成...")
+
+            image_result = self._extract_images(file_path, work_dir, file_id)
             
             # 整合结果
             result = {
@@ -73,6 +77,7 @@ class DocumentProcessor:
                 "work_dir": work_dir,
                 "toc_result": toc_result,
                 "split_result": split_result,
+                "image_result": image_result,
                 "message": "文档处理完成"
             }
             
@@ -105,8 +110,8 @@ class DocumentProcessor:
             目录提取结果
         """
         try:
-            # 生成目录结构
-            toc_items = read_word_toc(file_path)
+            # 生成目录结构，记录位置信息以便后续拆分使用
+            toc_items = read_word_toc(file_path, record_positions=True)
             
             if not toc_items:
                 return {
@@ -191,6 +196,36 @@ class DocumentProcessor:
                 "split_dir": None,
                 "split_files": [],
                 "split_count": 0
+            }
+
+    def _extract_images(self, file_path: str, work_dir: str, file_id: str) -> Dict[str, Any]:
+        """抽取文档中的图片资源"""
+        try:
+            images_root = os.path.join(work_dir, "images")
+            os.makedirs(images_root, exist_ok=True)
+            agent_result = self.image_agent.process(
+                file_path,
+                {
+                    "work_dir": images_root,
+                    "ocr_mode": os.getenv("IMAGE_OCR_MODE", "auto"),
+                },
+            )
+            if not agent_result.get("success"):
+                return {
+                    "success": False,
+                    "error": agent_result.get("error", "图片抽取失败"),
+                }
+            return {
+                "success": True,
+                "images_dir": agent_result["data"].get("images_dir"),
+                "manifest_path": agent_result["data"].get("manifest_path"),
+                "image_count": agent_result["data"].get("image_count", 0),
+                "images": agent_result["data"].get("images", []),
+            }
+        except Exception as exc:
+            return {
+                "success": False,
+                "error": f"图片抽取失败: {exc}",
             }
     
     def get_processing_status(self, file_id: str) -> Dict[str, Any]:

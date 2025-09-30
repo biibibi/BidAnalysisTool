@@ -27,7 +27,8 @@ BidAnalysis/
 │       ├── agent_manager.py     # 代理管理器
 │       ├── base_agent.py        # 基础代理类
 │       ├── project_info_agent.py # 项目信息提取代理
-│       ├── word_image_separator.py # Word图像分离工具
+│       ├── image_extraction_agent.py # Word图片提取与AI命名（替代原 word_image_separator 脚本）
+│       ├── authorization_letter_agent.py # 授权委托书/身份证明多模态核验
 │       ├── word_splitter.py     # Word文档拆分工具
 │       └── wordtoc_agent.py     # Word目录提取代理
 ├── 
@@ -63,9 +64,14 @@ BidAnalysis/
   - **agent_manager.py**: 统一管理各种AI代理
   - **base_agent.py**: 所有代理的基础类
   - **project_info_agent.py**: 项目信息提取和匹配
-  - **word_image_separator.py**: Word文档图像分离
+  - **image_extraction_agent.py**: Word图片提取、上下文分析、AI命名及（可选）OCR
+  - **authorization_letter_agent.py**: 授权委托书与证件多模态核验（项目编号/名称比对、人员与证件有效性）
   - **word_splitter.py**: Word文档智能拆分
   - **wordtoc_agent.py**: Word文档目录提取
+
+### 变更说明
+- 原 `word_image_separator.py` 已删除，相关功能由 `image_extraction_agent.py` 统一实现。
+- 如果需要生成“图片占位符版本文档”，可在后续扩展于 `image_extraction_agent` 中添加可选导出（待实现）。
 
 ### 前端 (frontend/)
 - **index.html**: 主页面，招标文件分析功能

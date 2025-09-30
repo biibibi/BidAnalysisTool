@@ -164,6 +164,8 @@ class DatabaseManager:
                     file_id TEXT NOT NULL,            -- 关联的文件ID
                     analysis_result TEXT NOT NULL,    -- 分析结果(JSON格式)
                     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 分析时间
+                    project_id TEXT,                  -- 项目编号
+                    project_name TEXT,                -- 项目名称
                     FOREIGN KEY (file_id) REFERENCES files (id)  -- 外键约束
                 )
             ''')
@@ -181,9 +183,50 @@ class DatabaseManager:
                     FOREIGN KEY (tender_analysis_id) REFERENCES tender_analysis (id) -- 外键约束
                 )
             ''')
+
+            # 确保新增的项目信息字段存在（兼容旧版数据库）
+            self._ensure_column(cursor, 'tender_analysis', 'project_id', 'TEXT')
+            self._ensure_column(cursor, 'tender_analysis', 'project_name', 'TEXT')
             
             # 提交事务，确保表创建成功
             conn.commit()
+
+    def _ensure_column(self, cursor: sqlite3.Cursor, table_name: str, column_name: str, column_definition: str):
+        """确保指定表包含指定字段，若缺失则自动添加"""
+        try:
+            cursor.execute(f"PRAGMA table_info({table_name})")
+            existing_columns = [row[1] for row in cursor.fetchall()]
+            if column_name not in existing_columns:
+                cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_definition}")
+        except Exception as e:
+            print(f"确保表 {table_name} 字段 {column_name} 存在时出错: {e}")
+    
+    def update_tender_project_info(self, file_id: str, project_id: Optional[str], project_name: Optional[str]) -> bool:
+        """更新招标文件分析结果中的项目信息字段"""
+        if not file_id:
+            return False
+
+        # 如果没有提供任何项目信息，则无需更新
+        if project_id is None and project_name is None:
+            return False
+
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+
+                cursor.execute('''
+                    UPDATE tender_analysis
+                    SET project_id = ?,
+                        project_name = ?
+                    WHERE file_id = ?
+                ''', (project_id, project_name, file_id))
+
+                conn.commit()
+                return cursor.rowcount > 0
+
+        except Exception as e:
+            print(f"更新招标项目信息失败: {e}")
+            return False
     
     def save_file_record(self, file_id: str, filename: str, file_path: str, content: str) -> bool:
         """

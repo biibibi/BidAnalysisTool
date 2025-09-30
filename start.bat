@@ -3,10 +3,10 @@ setlocal ENABLEDELAYEDEXPANSION
 echo Starting BidAnalysis Tool (Python 3.12 preferred)...
 echo.
 
-:: Prefer Python 3.12 virtual environment for COM/Word support
-if not exist ".venv312\Scripts\activate.bat" (
+:: Use existing virtual environment or create new one
+if not exist "venv\Scripts\activate.bat" (
     echo Creating Python 3.12 virtual environment...
-    py -3.12 -m venv .venv312
+    py -3.12 -m venv venv
     if %errorlevel% neq 0 (
         echo.
         echo [ERROR] Python 3.12 not found. Please install Python 3.12 first.
@@ -16,8 +16,8 @@ if not exist ".venv312\Scripts\activate.bat" (
     )
 )
 
-:: Activate Python 3.12 environment
-call .venv312\Scripts\activate.bat
+:: Activate virtual environment
+call venv\Scripts\activate.bat
 
 :: Install dependencies
 echo Installing dependencies...
